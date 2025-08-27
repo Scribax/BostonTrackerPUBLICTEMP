@@ -1,0 +1,35 @@
+{
+  "name": "boston-tracker-backend",
+  "version": "1.0.0",
+  "description": "Sistema de tracking para BOSTON American Burgers",
+  "main": "server-postgres.js",
+  "scripts": {
+    "start": "node server-postgres.js",
+    "dev": "nodemon server-postgres.js",
+    "start:mongo": "node server.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "tracking",
+    "delivery",
+    "geolocation"
+  ],
+  "author": "BOSTON American Burgers",
+  "license": "ISC",
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "express-rate-limit": "^6.10.0",
+    "helmet": "^7.0.0",
+    "jsonwebtoken": "^9.0.2",
+    "mongoose": "^7.5.0",
+    "pg": "^8.16.3",
+    "sequelize": "^6.37.7",
+    "socket.io": "^4.7.2"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  }
+}

@@ -1,0 +1,48 @@
+{
+  "cli": {
+    "version": ">= 13.2.3",
+    "appVersionSource": "local"
+  },
+  "build": {
+    "production": {
+      "android": {
+        "buildType": "apk",
+        "gradleCommand": ":app:assembleRelease",
+        "withoutCredentials": false,
+        "env": {
+          "EXPO_PUBLIC_DEBUG_MODE": "false"
+        }
+      },
+      "ios": {
+        "simulator": false,
+        "buildConfiguration": "Release"
+      }
+    },
+    "preview": {
+      "android": {
+        "buildType": "apk",
+        "withoutCredentials": true,
+        "env": {
+          "EXPO_PUBLIC_DEBUG_MODE": "false"
+        }
+      },
+      "ios": {
+        "simulator": false,
+        "buildConfiguration": "Release"
+      }
+    },
+    "development": {
+      "android": {
+        "buildType": "developmentClient",
+        "withoutCredentials": true,
+        "env": {
+          "EXPO_PUBLIC_DEBUG_MODE": "true"
+        }
+      },
+      "ios": {
+        "simulator": true,
+        "buildConfiguration": "Debug"
+      }
+    }
+  }
+}
