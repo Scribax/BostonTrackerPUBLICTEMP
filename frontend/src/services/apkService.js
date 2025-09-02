@@ -81,13 +81,13 @@ class APKService {
       const apkUrl = 'http://185.144.157.163/apk/boston-tracker-latest.apk';
       
       // Mensaje predefinido
-      const defaultMessage = `🍔 *BOSTON American Burgers - App Delivery*
+      const defaultMessage = `*BOSTON American Burgers - App Delivery*
 
-¡Hola ${deliveryName}! 👋
+Hola ${deliveryName}!
 
-Te envío la aplicación oficial de BOSTON Tracker para que puedas comenzar a trabajar como delivery.
+Te envio la aplicacion oficial de BOSTON Tracker para que puedas comenzar a trabajar como delivery.
 
-📱 *Descarga la app aquí:*
+*Descarga la app aqui:*
 ${apkUrl}
 
 📋 *Instrucciones:*

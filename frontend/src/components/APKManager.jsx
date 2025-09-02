@@ -469,7 +469,7 @@ const APKManager = () => {
                     <div className="bg-light p-3 rounded border">
                       <small style={{ whiteSpace: 'pre-line' }}>
                         {customMessage.trim() || 
-                          `🍔 *BOSTON American Burgers - App Delivery*\n\n¡Hola ${selectedDelivery?.name || (useCustomPhone ? 'Nuevo Delivery' : '')}! 👋\n\nTe envío la aplicación oficial de BOSTON Tracker para que puedas comenzar a trabajar como delivery.\n\n📱 *Descarga la app aquí:*\n${apkInfo.downloadUrl}\n\n📋 *Instrucciones:*\n1️⃣ Descarga el archivo APK\n2️⃣ Permite instalación de "Fuentes desconocidas"\n3️⃣ Instala la aplicación\n4️⃣ Usa tus credenciales de empleado para login\n\n🚀 *¡Listo para comenzar!*\n\n*Cualquier duda, no dudes en contactarme.*\n\n---\nBOSTON American Burgers 🍔`
+                          `*BOSTON American Burgers - App Delivery*\n\nHola ${selectedDelivery?.name || (useCustomPhone ? 'Nuevo Delivery' : '')}!\n\nTe envio la aplicacion oficial de BOSTON Tracker para que puedas comenzar a trabajar como delivery.\n\n*Descarga la app aqui:*\n${apkInfo.downloadUrl}\n\n*Instrucciones:*\n1. Descarga el archivo APK\n2. Permite instalacion de "Fuentes desconocidas"\n3. Instala la aplicacion\n4. Usa tus credenciales de empleado para login\n\n*Listo para comenzar!*\n\nCualquier duda, no dudes en contactarme.\n\n---\nBOSTON American Burgers`
                         }
                       </small>
                     </div>
