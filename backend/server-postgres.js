@@ -1462,28 +1462,7 @@ app.post("/api/apk/send-whatsapp", protect, async (req, res) => {
     const cleanPhone = phoneNumber.replace(/[^\d+]/g, "");
     
     // Mensaje predefinido
-    // Mensaje predefinido optimizado para WhatsApp
-    const defaultMessage = `*BOSTON American Burgers - App Delivery*
-
-Hola ${deliveryName || ""}!
-
-Te envio la aplicacion oficial de BOSTON Tracker para que puedas comenzar a trabajar como delivery.
-
-*Descarga la app aqui:*
-${apkUrl}
-
-*Instrucciones:*
-1. Descarga el archivo APK
-2. Permite instalacion de "Fuentes desconocidas"  
-3. Instala la aplicacion
-4. Usa tus credenciales de empleado para login
-
-*Listo para comenzar!*
-
-Cualquier duda, no dudes en contactarme.
-
----
-BOSTON American Burgers`;
+    const defaultMessage = `*BOSTON American Burgers - App Delivery*\n\nHola ${deliveryName || ""}!\n\nTe envio la aplicacion oficial de BOSTON Tracker para que puedas comenzar a trabajar como delivery.\n\nDescarga la app desde este enlace:\n\n${apkUrl}\n\n*Instrucciones:*\n1. Toca el enlace de arriba para descargar\n2. Permite instalacion de "Fuentes desconocidas"\n3. Instala la aplicacion\n4. Usa tus credenciales de empleado para login\n\n*Listo para comenzar!*\n\nCualquier duda, no dudes en contactarme.\n\n---\nBOSTON American Burgers`;
     
     const finalMessage = customMessage || defaultMessage;
     
