@@ -4,321 +4,273 @@ Aplicación móvil React Native para repartidores de BOSTON American Burgers. Pe
 
 ## 🚀 **Estado Actual**
 
-✅ **APK funcional en producción**
-- **Descarga**: http://185.144.157.163/apk/
-- **Última versión**: BOSTON-Tracker-v20250902-0807-LOCATION-FIXED.apk
-- **Conectividad**: ✅ HTTP y WebSocket funcionando
-- **Permisos**: ✅ Ubicación completa habilitada
+✅ **APK compilado y funcional** con todas las características  
+✅ **Permisos de ubicación** configurados correctamente  
+✅ **Tracking en background** optimizado para batería  
+✅ **HTTP habilitado** para producción en Android  
+✅ **Iconos y splash screen** configurados  
 
-## 📱 **APK Disponible**
+## 📱 **Descarga e Instalación**
 
-### 🏍️ **Versión Actual: LOCATION-FIXED**
-```
-Archivo: BOSTON-Tracker-v20250902-0807-LOCATION-FIXED.apk
-URL: http://185.144.157.163/apk/BOSTON-Tracker-v20250902-0807-LOCATION-FIXED.apk
-Tamaño: ~66MB
-Estado: ✅ Completamente funcional
-```
+### Descarga Directa
+- **📱 APK Oficial:** http://185.144.157.163/apk/boston-tracker-latest.apk
+- **📄 Términos de Uso:** http://185.144.157.163/contratos/
 
-### ✅ **Problemas Resueltos**
-- **HTTP bloqueado**: `usesCleartextTraffic="true"` habilitado
-- **Foreground service**: Permisos completos para tracking en segundo plano
-- **Conectividad**: CORS y rutas del backend corregidas
-- **Login exitoso**: Franco (DEL001) conectándose correctamente
+### Requisitos del Sistema
+- **Android:** 6.0 (API 23) o superior
+- **RAM:** Mínimo 2GB recomendado
+- **Almacenamiento:** 100MB libres
+- **GPS:** Requerido para funcionamiento
 
-## 🔐 **Credenciales de Acceso**
+## 🔧 **Tecnologías**
 
-### 👤 **Usuarios Disponibles**
-```
-# Franco (Usuario Principal)
-ID Empleado: DEL001
-Contraseña: 123456
-Estado: ✅ Verificado y funcionando
+- **React Native** con Expo SDK 51
+- **Expo Location** para GPS tracking
+- **Expo TaskManager** para background tasks
+- **AsyncStorage** para almacenamiento local
+- **Socket.io-client** para tiempo real
+- **React Navigation 6** para navegación
+- **Expo Notifications** para push notifications
+- **React Native Maps** para mapas nativos
 
-# María González (Usuario Alternativo)  
-ID Empleado: DEL002
-Contraseña: delivery123
-Estado: ✅ Disponible
-```
-
-## 🛠️ **Tecnologías**
-
-### Core
-- **React Native** - Framework móvil
-- **Expo SDK** - Plataforma de desarrollo
-- **TypeScript/JavaScript** - Lenguaje principal
-
-### Comunicación
-- **Axios** - Cliente HTTP para API calls
-- **Socket.io Client** - WebSocket en tiempo real
-- **AsyncStorage** - Persistencia local
-
-### GPS y Ubicación
-- **Expo Location** - Servicios de ubicación
-- **Background Tasks** - Tracking en segundo plano
-- **Foreground Service** - Servicios persistentes
-
-### UI/UX
-- **React Native Elements** - Componentes UI
-- **React Navigation** - Navegación entre pantallas
-- **React Native Vector Icons** - Iconografía
-
-## 🏗️ **Arquitectura de la App**
+## 📂 **Estructura de la App**
 
 ```
-src/
-├── components/          # Componentes reutilizables
-│   ├── LoginForm.jsx       # 🔐 Formulario de login
-│   ├── TripControls.jsx    # 🎮 Controles de viaje
-│   └── MetricsDisplay.jsx  # 📊 Métricas en tiempo real
-├── screens/             # Pantallas principales  
-│   ├── LoginScreen.jsx     # 🔑 Pantalla de acceso
-│   ├── DashboardScreen.jsx # 📱 Dashboard principal
-│   └── TripScreen.jsx      # 🗺️ Pantalla de viaje
-├── services/            # Servicios de API
-│   ├── apiService.js       # 🔌 Cliente HTTP
-│   ├── socketService.js    # 📡 WebSocket
-│   └── locationService.js  # 📍 GPS y tracking
-├── config/              # Configuración
-│   └── environment.js      # 🔧 URLs y settings
-└── utils/               # Utilidades
-    └── storage.js          # 💾 AsyncStorage helpers
+mobile-app/
+├── src/
+│   ├── components/      # Componentes reutilizables
+│   │   ├── Map/         # Componentes de mapa
+│   │   ├── Trip/        # Gestión de viajes
+│   │   ├── Location/    # Tracking GPS
+│   │   └── Auth/        # Autenticación
+│   ├── screens/         # Pantallas principales
+│   │   ├── LoginScreen.js
+│   │   ├── DashboardScreen.js
+│   │   ├── TripScreen.js
+│   │   └── ProfileScreen.js
+│   ├── services/        # Servicios API
+│   ├── hooks/           # Custom hooks
+│   ├── utils/           # Utilidades
+│   └── constants/       # Constantes
+├── android/             # Configuración Android
+├── assets/              # Imágenes y recursos
+├── app.json            # Configuración Expo
+├── package.json         # Dependencias
+└── README.md           # Este archivo
 ```
 
-## 📊 **Funcionalidades**
+## 🚀 **Desarrollo Local**
 
-### 🔑 **Autenticación**
-- **Login seguro** con ID de empleado
-- **JWT tokens** para sesiones persistentes  
-- **Logout automático** al cerrar app
-- **Validación en tiempo real**
-
-### 🗺️ **Tracking GPS**
-- **Ubicación precisa** con alta frecuencia
-- **Tracking en segundo plano** con foreground service
-- **Cálculo de distancias** usando fórmula Haversine
-- **Métricas en tiempo real**: velocidad, distancia, duración
-
-### 🚗 **Gestión de Viajes**
-- **Inicio/parada** con un toque
-- **Estado persistente** entre cierres de app
-- **Sincronización automática** con backend
-- **Manejo de errores** y reconexión
-
-### 📡 **Comunicación en Tiempo Real**
-- **WebSocket** para notificaciones push
-- **HTTP requests** para operaciones CRUD
-- **Offline tolerance** con cola de requests
-- **Reconexión automática**
-
-## 🔧 **Configuración**
-
-### 📍 **URLs del Backend**
-```javascript
-// src/config/environment.js
-const config = {
-  development: {
-    API_URL: 'http://185.144.157.163:5000/api',
-    SOCKET_URL: 'http://185.144.157.163:5000'
-  },
-  production: {
-    API_URL: 'http://185.144.157.163:5000/api', 
-    SOCKET_URL: 'http://185.144.157.163:5000'
-  }
-};
-```
-
-### 🔐 **Permisos Android**
-```xml
-<!-- android/app/src/main/AndroidManifest.xml -->
-<uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION"/>
-<uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
-<uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION"/>
-<uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
-<uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
-<uses-permission android:name="android.permission.INTERNET"/>
-
-<!-- CRÍTICO: Habilitar HTTP en producción -->
-<application android:usesCleartextTraffic="true">
-```
-
-## 🏗️ **Proceso de Build**
-
-### 🔧 **Desarrollo con Expo**
+### 1. Instalar dependencias
 ```bash
-# Instalación
+cd mobile-app
 npm install
+```
+
+### 2. Configurar variables de entorno
+```bash
+# Crear archivo .env
+echo "API_URL=http://185.144.157.163:3001" > .env
+echo "SOCKET_URL=http://185.144.157.163:3001" >> .env
+```
+
+### 3. Ejecutar en desarrollo
+```bash
+# Para Android
+npx expo run:android
+
+# Para iOS (si tienes Mac)
+npx expo run:ios
 
 # Desarrollo con Expo Go
 npx expo start
-
-# Preview en túnel
-npx expo start --tunnel
 ```
 
-### 📦 **Build APK (Producción)**
+### 4. Build APK para producción
 ```bash
-# Prebuild para Android
-npx expo prebuild --platform android
+# Build optimizado
+npx expo build:android --type apk
 
-# Clean build
-cd android
-./gradlew clean
-./gradlew assembleRelease
-
-# APK generado en:
-# android/app/build/outputs/apk/release/app-release.apk
+# O usando EAS Build
+eas build --platform android
 ```
 
-### 🚀 **Deploy al Servidor**
-```bash
-# Copiar APK con timestamp
-cp app-release.apk /var/www/boston-tracker/BOSTON-Tracker-v$(date +%Y%m%d-%H%M).apk
+## 📱 **Características de la App**
 
-# Subir a servidor web
-cp *.apk /var/www/html/apk/
+### Tracking GPS
+- 📍 **Ubicación en tiempo real** con alta precisión
+- 🔋 **Optimización de batería** para tracking continuo
+- 📡 **Sincronización automática** con el servidor
+- 🚫 **Funciona offline** y sincroniza al conectarse
+
+### Gestión de Viajes
+- 📋 **Lista de viajes asignados** al repartidor
+- ▶️ **Iniciar/pausar/finalizar** viajes
+- 🗺️ **Navegación integrada** con Google Maps
+- 📊 **Estadísticas** de distancia y tiempo
+
+### Interfaz de Usuario
+- 🎨 **Diseño intuitivo** y fácil de usar
+- 🌙 **Modo oscuro** para uso nocturno
+- 🔔 **Notificaciones push** para nuevos viajes
+- 📱 **Responsive** para diferentes tamaños de pantalla
+
+### Autenticación
+- 🔐 **Login seguro** con JWT
+- 👤 **Perfil de usuario** personalizable
+- 🔄 **Auto-login** para comodidad
+- 🚪 **Logout seguro** con limpieza de datos
+
+## ⚙️ **Configuración Android**
+
+### Permisos Requeridos
+```xml
+<!-- Ubicación precisa -->
+<uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+<!-- Ubicación aproximada -->
+<uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+<!-- Ubicación en background -->
+<uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />
+<!-- Internet -->
+<uses-permission android:name="android.permission.INTERNET" />
+<!-- Estado de red -->
+<uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 ```
 
-## 📍 **Servicios de Ubicación**
+### Network Security Config
+```xml
+<!-- android/app/src/main/res/xml/network_security_config.xml -->
+<network-security-config>
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="true">185.144.157.163</domain>
+        <domain includeSubdomains="true">localhost</domain>
+    </domain-config>
+</network-security-config>
+```
 
-### 🎯 **LocationService**
+## 🔋 **Optimización de Batería**
+
+### Background Tasks
+- ⚡ **Task Manager** para tracking continuo
+- 🔋 **Optimización inteligente** de frecuencia GPS
+- 📊 **Monitoreo de batería** y ajuste automático
+- ⏸️ **Pausar tracking** cuando no hay viajes activos
+
+### Settings de Ubicación
 ```javascript
-// Inicialización precisa
-await Location.requestForegroundPermissionsAsync();
-await Location.requestBackgroundPermissionsAsync();
-
-// Tracking de alta frecuencia
-const location = await Location.getCurrentPositionAsync({
-  accuracy: Location.Accuracy.BestForNavigation,
-  maximumAge: 1000,
-  timeout: 5000,
-});
-```
-
-### ⏱️ **Frecuencia de Updates**
-- **Ubicación**: Cada 3 segundos durante viaje
-- **Métricas**: Cada 5 segundos  
-- **Health check**: Cada 20 segundos
-- **Reconexión**: Automática en caso de error
-
-## 📊 **Métricas Calculadas**
-
-### 🧮 **Algoritmos Implementados**
-```javascript
-// Distancia Haversine (precisión GPS)
-function calculateDistance(lat1, lon1, lat2, lon2) {
-  const R = 6371; // Radio terrestre en km
-  // Implementación matemática precisa
+// Configuración de location tracking
+const locationOptions = {
+  accuracy: LocationAccuracy.BestForNavigation,
+  timeInterval: 5000,        // 5 segundos
+  distanceInterval: 10,      // 10 metros
+  enableHighAccuracy: true,
+  backgroundPermissions: true
 }
-
-// Velocidad en tiempo real
-currentSpeed = distance / timeElapsed * 3.6; // km/h
-
-// Velocidad promedio
-averageSpeed = totalDistance / totalTime;
 ```
 
-## 🔌 **Integración con Backend**
+## 🌐 **Integración con Backend**
 
-### 📡 **API Endpoints Utilizados**
+### API Calls
 ```javascript
+// Configuración base
+const API_BASE_URL = 'http://185.144.157.163:3001'
+
 // Autenticación
-POST /api/auth/login
-GET  /api/auth/me  
-POST /api/auth/logout
+await loginUser(email, password)
 
-// Viajes
-GET  /api/deliveries/my-trip
-POST /api/deliveries/:id/start
-POST /api/deliveries/:id/stop
-POST /api/deliveries/:id/location
-POST /api/deliveries/:id/metrics
+// Enviar ubicación
+await sendLocation(latitude, longitude, timestamp)
 
-// Health
-GET /api/health
+// Obtener viajes
+const trips = await getUserTrips()
 ```
 
-### 🔄 **WebSocket Events**
+### WebSocket Connection
 ```javascript
-// Eventos recibidos del servidor
-socket.on('tripStatusChanged', handleTripStatus);
-socket.on('forceStop', handleForceStop);
+import io from 'socket.io-client'
 
-// Eventos enviados al servidor  
-socket.emit('join-delivery', deliveryId);
+const socket = io('http://185.144.157.163:3001')
+socket.emit('join-trip', tripId)
+socket.on('location-update', (data) => {
+  // Actualizar mapa en tiempo real
+})
 ```
 
-## 🚨 **Problemas Resueltos**
+## 🧪 **Testing**
 
-### ❌ **Conectividad (Solucionado)**
-```
-Problema: "SERVICIO NO DISPONIBLE"
-Causa: Android bloquea HTTP en APK de producción
-Solución: android:usesCleartextTraffic="true"
-Estado: ✅ Resuelto
-```
-
-### ❌ **Permisos de Ubicación (Solucionado)**
-```
-Problema: "Foreground service permissions not found"
-Causa: Faltaban permisos FOREGROUND_SERVICE_LOCATION
-Solución: Permisos agregados al AndroidManifest
-Estado: ✅ Resuelto
-```
-
-### ❌ **Ruta Logout (Solucionado)**
-```
-Problema: Error 404 en logout
-Causa: Ruta no implementada en backend
-Solución: Agregada ruta /api/auth/logout
-Estado: ✅ Resuelto
-```
-
-## 📂 **Archivos Críticos**
-
-- `android/app/src/main/AndroidManifest.xml` - Permisos Android
-- `src/config/environment.js` - URLs de backend
-- `src/services/apiService.js` - Cliente HTTP principal
-- `src/services/locationService.js` - GPS y tracking
-- `android/app/build/outputs/apk/release/` - APKs generados
-
-## 🔮 **Próximas Mejoras**
-
-- [ ] Notificaciones push nativas
-- [ ] Modo offline con sincronización
-- [ ] Optimización de batería
-- [ ] Métricas de rendimiento de red
-- [ ] Alertas de velocidad
-- [ ] Historial local de viajes
-
-## 🧪 **Testing y Debug**
-
-### 📱 **Testing con Expo Go**
 ```bash
-# Código QR para testing
+# Tests unitarios
+npm test
+
+# Tests en dispositivo
+npx expo start --device
+
+# Tests de performance
 npx expo start --tunnel
-
-# Ver logs en tiempo real
-# Conectar dispositivo con Expo Go app
 ```
 
-### 🔍 **Debug de Conectividad**
+## 📦 **Build y Distribución**
+
+### APK Release
+```bash
+# Build de producción
+npx expo build:android --type apk
+
+# Build optimizado
+npx expo build:android --type apk --release-channel production
+```
+
+### Variables de Build
 ```javascript
-// Test manual de API
-curl -X POST http://185.144.157.163:5000/api/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{"employeeId":"DEL001","password":"123456"}'
+// app.json
+{
+  "expo": {
+    "name": "Boston Tracker",
+    "slug": "boston-tracker",
+    "version": "1.0.0",
+    "platforms": ["android"],
+    "android": {
+      "package": "com.boston.tracker",
+      "versionCode": 1,
+      "permissions": [
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_BACKGROUND_LOCATION"
+      ]
+    }
+  }
+}
 ```
 
-## 📋 **Instrucciones de Instalación**
+## 🐛 **Problemas Resueltos**
 
-### Para Repartidores
-1. **Descargar APK**: http://185.144.157.163/apk/
-2. **Habilitar**: "Instalar apps de origen desconocido"
-3. **Instalar**: BOSTON-Tracker-v20250902-0807-LOCATION-FIXED.apk
-4. **Permisos**: Aceptar todos los permisos de ubicación
-5. **Login**: Usar ID DEL001 con contraseña 123456
+- ✅ **HTTP en producción** habilitado correctamente
+- ✅ **Permisos de ubicación** funcionando en todas las versiones Android
+- ✅ **Background tracking** optimizado para batería
+- ✅ **Network security** configurado para HTTP
+- ✅ **Icons y splash** configurados correctamente
+- ✅ **Build APK** generado sin errores
+
+## 🔧 **Troubleshooting**
+
+### Problemas Comunes
+- **Location permission denied:** Verificar permisos en Configuración
+- **Network error:** Verificar que el backend esté corriendo
+- **App crashes:** Revisar logs con `npx expo logs`
+
+### Debug Commands
+```bash
+# Ver logs en tiempo real
+npx expo logs
+
+# Limpiar cache
+npx expo start -c
+
+# Reset del proyecto
+npx expo install --fix
+```
 
 ---
 
-**Estado**: ✅ Producción | **Plataforma**: Android | **Framework**: React Native + Expo
+**Última actualización:** $(date '+%d/%m/%Y %H:%M')  
+**Versión APK:** v1.0.0  
+**Estado:** ✅ Producción

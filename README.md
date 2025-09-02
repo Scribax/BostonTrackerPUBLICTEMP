@@ -4,231 +4,171 @@ Sistema completo de seguimiento en tiempo real para deliveries de **BOSTON Ameri
 
 ## 🌟 Características Principales
 
-- ✅ **Dashboard Web**: Monitoreo en tiempo real de todos los deliveries
-- ✅ **API Backend**: Sistema robusto con PostgreSQL y WebSocket
-- ✅ **App Móvil**: Aplicación React Native para repartidores
-- ✅ **Tracking GPS**: Seguimiento preciso con cálculos de distancia Haversine
-- ✅ **Tiempo Real**: Comunicación WebSocket bidireccional
-- ✅ **Métricas**: Velocidad, distancia, duración y análisis de rutas
+- 📱 **App móvil React Native** para repartidores con tracking GPS
+- 🌐 **Dashboard web React** para administradores  
+- 🗄️ **API REST robusta** con Node.js y PostgreSQL
+- 🔄 **Comunicación en tiempo real** con Socket.io
+- 🗺️ **Mapas interactivos** con Leaflet y OpenStreetMap
+- 📊 **Analytics y reportes** de deliveries
 
-## 🚀 Estado del Proyecto
+## 🌐 URLs del Sistema
 
-### ✅ **Completamente Funcional**
-- **Backend**: Node.js + Express + PostgreSQL + Socket.io
-- **Frontend**: React + Vite + Leaflet Maps + Bootstrap
-- **Mobile**: React Native + Expo con APK generado
-- **Servidor**: Debian con Nginx configurado
+- **🌐 Dashboard Web:** http://185.144.157.163/
+- **📄 Contratos y Términos:** http://185.144.157.163/contratos/
+- **📱 Descarga APK:** http://185.144.157.163/apk/boston-tracker-latest.apk
+- **🔌 API Backend:** http://185.144.157.163:3001/
 
-### 🌐 **URLs en Producción**
-- **Dashboard Admin**: http://185.144.157.163/
-- **API Backend**: http://185.144.157.163:5000/api
-- **Descarga APK**: http://185.144.157.163/apk/
-
-## 📱 **APK Móvil Disponible**
-
-### 🏍️ **Última Versión: LOCATION-FIXED**
-```
-Archivo: BOSTON-Tracker-v20250902-0807-LOCATION-FIXED.apk
-URL: http://185.144.157.163/apk/BOSTON-Tracker-v20250902-0807-LOCATION-FIXED.apk
-Tamaño: ~66MB
-```
-
-**Mejoras incluidas:**
-- ✅ Conectividad HTTP habilitada (`usesCleartextTraffic="true"`)
-- ✅ Permisos completos de ubicación y foreground service
-- ✅ Ruta `/auth/logout` corregida en backend
-- ✅ CORS optimizado para aplicaciones móviles
-
-## 🔐 **Credenciales del Sistema**
-
-### 👤 **Usuarios de Prueba**
-```bash
-# Delivery (App Móvil)
-ID Empleado: DEL001
-Contraseña: 123456
-Usuario: Franco
-
-# Delivery 2
-ID Empleado: DEL002  
-Contraseña: delivery123
-Usuario: María González
-
-# Administrador (Dashboard Web)
-Email: admin@bostonburgers.com
-Contraseña: password123
-```
-
-## 🏗️ **Arquitectura del Sistema**
-
-```
-┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   📱 App Móvil   │    │  🌐 Dashboard    │    │  🗄️ Backend API  │
-│  React Native   │◄──►│    React Web    │◄──►│ Node.js + PG   │
-│   (Delivery)    │    │    (Admin)      │    │   Socket.io    │
-└─────────────────┘    └─────────────────┘    └─────────────────┘
-        │                        │                        │
-        └────────────────────────┼────────────────────────┘
-                                 │
-                    ┌─────────────────┐
-                    │  🗺️ Maps & GPS   │
-                    │   Leaflet Web   │
-                    │ Location Mobile │
-                    └─────────────────┘
-```
-
-## 📂 **Estructura del Proyecto**
+## 📂 Estructura del Proyecto
 
 ```
 boston-tracker/
-├── backend/                 # API Backend (Node.js + PostgreSQL)
-│   ├── server-postgres.js   # Servidor principal
-│   ├── controllers/         # Controladores de API
-│   ├── routes/             # Definición de rutas
-│   └── middleware/         # Middlewares de autenticación
-├── frontend/               # Dashboard Web (React + Vite)
+├── 📱 apk/           # Archivos APK para descarga
+│   ├── boston-tracker-latest.apk
+│   └── README.txt
+├── 🖥️  backend/       # API y servidor Node.js
 │   ├── src/
-│   │   ├── components/     # Componentes React
-│   │   ├── services/       # Servicios de API
-│   │   └── pages/          # Páginas principales
-│   └── build/              # Build de producción
-├── mobile-app/             # App Móvil (React Native + Expo)
+│   ├── package.json
+│   └── README.md
+├── 📄 contratos/     # Página de términos y contratos
+│   └── index.html
+├── 📚 docs/          # Documentación del proyecto
+│   ├── ANEXO_INVENTARIO_TECNICO.md
+│   ├── CHECKLIST_TRANSFERENCIA.md
+│   ├── CONTRATO_VENTA_BOSTON_TRACKER.md
+│   └── MEJORAS_IMPLEMENTADAS.md
+├── 🌐 frontend/      # Dashboard web React
 │   ├── src/
-│   │   ├── components/     # Componentes móviles
-│   │   ├── services/       # Servicios de conectividad
-│   │   └── config/         # Configuración de entorno
-│   └── android/            # Build Android
-└── *.apk                   # APKs generados
+│   ├── build/
+│   ├── package.json
+│   └── README.md
+├── 📱 mobile-app/    # Aplicación móvil React Native
+│   ├── src/
+│   ├── android/
+│   ├── package.json
+│   └── README.md
+├── ⚙️  scripts/      # Scripts de utilidad
+└── 📋 README.md      # Este archivo
 ```
 
-## 🛠️ **Tecnologías Utilizadas**
+## 🚀 Inicio Rápido
 
-### Backend
-- **Node.js** con Express.js
-- **PostgreSQL** con Sequelize ORM
-- **Socket.io** para tiempo real
-- **JWT** para autenticación
-- **bcryptjs** para seguridad
-
-### Frontend Dashboard
-- **React 18** con Hooks
-- **Vite** como bundler
-- **Leaflet** para mapas interactivos
-- **Bootstrap 5** para UI
-- **Axios** para API calls
-
-### App Móvil
-- **React Native** con Expo
-- **Expo Location** para GPS
-- **AsyncStorage** para persistencia
-- **Socket.io Client** para tiempo real
-- **Android SDK** para builds
-
-## 🔧 **Instalación y Configuración**
-
-### 1. Clonar Repositorio
+### 1. Clonar el repositorio
 ```bash
 git clone https://github.com/Scribax/BostonTracker.git
 cd BostonTracker
 ```
 
-### 2. Backend Setup
+### 2. Configurar Backend
 ```bash
 cd backend
+cp .env.example .env
+# Configurar variables de entorno
 npm install
-# Configurar PostgreSQL y variables de entorno
-node server-postgres.js
+npm run dev
 ```
 
-### 3. Frontend Setup
+### 3. Configurar Frontend
 ```bash
 cd frontend
 npm install
 npm run build
-# Configurar Nginx para servir build/
+# O para desarrollo: npm run dev
 ```
 
-### 4. Mobile App Setup
+### 4. Configurar App Móvil
 ```bash
 cd mobile-app
 npm install
-npx expo prebuild
-# Para APK: cd android && ./gradlew assembleRelease
+# Para Android:
+npx expo run:android
 ```
 
-## 🌐 **Configuración del Servidor**
+## 🔧 Tecnologías Utilizadas
 
-### Nginx Configuration
-```nginx
-# Dashboard en puerto 80
-server {
-    listen 80;
-    server_name 185.144.157.163;
-    root /var/www/boston-tracker/frontend/build;
-    index index.html;
-}
+### Backend
+- **Node.js** con Express
+- **PostgreSQL** como base de datos
+- **Socket.io** para tiempo real
+- **JWT** para autenticación
+- **Sequelize** ORM
 
-# APK downloads
-location /apk/ {
-    alias /var/www/html/apk/;
-    autoindex on;
-}
+### Frontend
+- **React** con Vite
+- **Leaflet** para mapas
+- **Socket.io-client** para tiempo real
+- **Material-UI** para componentes
+
+### Mobile App
+- **React Native** con Expo
+- **Expo Location** para GPS
+- **AsyncStorage** para datos locales
+- **React Navigation** para navegación
+
+## 📱 Instalación de la App
+
+### Opción 1: Descarga Directa
+Descarga el APK desde: http://185.144.157.163/apk/boston-tracker-latest.apk
+
+### Opción 2: Build desde código
+```bash
+cd mobile-app
+npm install
+npx expo build:android
 ```
 
-### Backend Configuration
-- **Puerto**: 5000
-- **Host**: 0.0.0.0 (accesible externamente)
-- **Base de datos**: PostgreSQL
-- **WebSocket**: Socket.io habilitado
+## 🔐 Configuración de Producción
 
-## 📊 **Funcionalidades**
+### Variables de Entorno
+Copia `.env.template` a `.env` y configura:
+```bash
+# Base de datos
+DATABASE_URL=postgresql://user:password@localhost:5432/boston_tracker
 
-### 🗺️ **Dashboard Admin**
-- Mapa en tiempo real con marcadores de scooter 🛵
-- Tracking de múltiples deliveries simultáneos
-- Métricas en vivo (velocidad, distancia, duración)
-- Gestión de usuarios y rutas históricas
-- Alertas de desconexión automáticas
+# JWT
+JWT_SECRET=tu_secret_super_seguro
 
-### 📱 **App Móvil**
-- Login con ID de empleado
-- Inicio/parada de viajes con un toque
-- Tracking GPS preciso en segundo plano
-- Sincronización automática con backend
-- Métricas en tiempo real
+# URLs
+FRONTEND_URL=http://185.144.157.163
+API_URL=http://185.144.157.163:3001
+```
 
-### 🔌 **API Backend**
-- Autenticación JWT segura
-- Endpoints RESTful completos
-- WebSocket para notificaciones push
-- Cálculos de distancia Haversine precisos
-- Rate limiting y logging detallado
+### Nginx
+La configuración de Nginx está optimizada para servir:
+- Frontend en `/`
+- Contratos en `/contratos/`
+- Descargas APK en `/apk/`
+- API proxy en `/api`
 
-## 🎯 **Próximos Pasos**
+## 📊 Estado del Proyecto
 
-- [ ] Implementar notificaciones push
-- [ ] Añadir modo offline para la app
-- [ ] Dashboard de métricas históricas
-- [ ] Integración con servicios de mapas premium
-- [ ] Sistema de alertas automáticas
+- ✅ **Backend:** API completa y funcional
+- ✅ **Frontend:** Dashboard responsive y operativo
+- ✅ **Mobile App:** APK compilado con permisos de ubicación
+- ✅ **Base de datos:** PostgreSQL configurada
+- ✅ **Deployment:** Nginx configurado y funcionando
+- ✅ **Documentación:** Completa y actualizada
 
-## 🤝 **Contribuir**
+## 🐛 Problemas Resueltos
 
-1. Fork el proyecto
-2. Crea una rama para tu feature (`git checkout -b feature/AmazingFeature`)
-3. Commit tus cambios (`git commit -m 'Add some AmazingFeature'`)
-4. Push a la rama (`git push origin feature/AmazingFeature`)
-5. Abre un Pull Request
+- ✅ HTTP habilitado en producción para Android
+- ✅ Permisos de ubicación configurados correctamente
+- ✅ Tracking en background optimizado
+- ✅ CORS configurado para todas las rutas
+- ✅ Iconos y assets de la app configurados
+- ✅ Página de contratos y términos implementada
 
-## 📄 **Licencia**
+## 📞 Soporte
 
-Este proyecto está bajo la Licencia MIT - ver el archivo [LICENSE](LICENSE) para detalles.
+- **📧 Email:** soporte@bostontracker.com
+- **🐛 Issues:** [GitHub Issues](https://github.com/Scribax/BostonTracker/issues)
+- **📚 Documentación:** Ver directorio `docs/`
 
-## 👨‍💻 **Desarrollo**
+## 📄 Licencia
 
-**Estado**: ✅ Producción  
-**Último Update**: Septiembre 2025  
-**Servidor**: Debian 12 en 185.144.157.163  
+Proyecto propietario de BOSTON American Burgers.
 
 ---
 
-*Desarrollado para BOSTON American Burgers - Sistema de tracking profesional para optimizar entregas*
+**Última actualización:** $(date '+%d/%m/%Y %H:%M')  
+**Versión:** v1.0.0  
+**Estado:** ✅ Producción
