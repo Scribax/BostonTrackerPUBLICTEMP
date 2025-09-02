@@ -14,8 +14,8 @@ const CONFIG = {
   HIGH_FREQUENCY_MODE: Constants.expoConfig?.extra?.EXPO_PUBLIC_HIGH_FREQUENCY_MODE === 'true' || false,
   MIN_DISTANCE_FILTER: parseInt(Constants.expoConfig?.extra?.EXPO_PUBLIC_MIN_DISTANCE_FILTER) || 2, // 2 metros
   DEBUG_MODE: Constants.expoConfig?.extra?.EXPO_PUBLIC_DEBUG_MODE === 'true' || false,
-  BATCH_SIZE: 5, // Enviar en lotes de 5 ubicaciones
-  MAX_BATCH_INTERVAL: 5000, // Máximo 5 segundos entre envíos
+  BATCH_SIZE: 3, // Enviar en lotes de 3 ubicaciones (balance entre eficiencia y tiempo real)
+  MAX_BATCH_INTERVAL: 6000, // Máximo 6 segundos entre envíos
   // Deshabilita el endpoint legacy /location para evitar sumar kilometraje en el backend
   USE_LEGACY_LOCATION_API: (Constants.expoConfig?.extra?.EXPO_PUBLIC_USE_LEGACY_LOCATION_API || 'false') === 'true',
 };
@@ -314,8 +314,8 @@ class LocationService {
       timestamp: new Date(location.timestamp)
     };
     
-    // Filtrar por precisión (solo usar ubicaciones ultra-precisas)
-    if (newLocation.accuracy > 15) { // Más de 15 metros de error, ignorar (ultra-estricto anti-deriva)
+    // Filtrar por precisión (optimizado para motos en ciudad)
+    if (newLocation.accuracy > 25) { // Más de 25 metros de error, ignorar (balance entre precisión y disponibilidad)
       if (CONFIG.DEBUG_MODE) {
         console.warn('🚨 Ubicación ignorada por baja precisión:', newLocation.accuracy + 'm');
       }

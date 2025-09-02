@@ -171,10 +171,12 @@ update_app_config() {
       "expo-font"
     ],
     "extra": {
-      "EXPO_PUBLIC_SERVER_URL": "http://$SERVER_IP:5000",
-      "EXPO_PUBLIC_TRACKING_INTERVAL": "1000",
-      "EXPO_PUBLIC_HIGH_FREQUENCY_MODE": "true",
-      "EXPO_PUBLIC_MIN_DISTANCE_FILTER": "2",
+      "EXPO_PUBLIC_API_URL": "http://$SERVER_IP:5000/api",
+      "EXPO_PUBLIC_SOCKET_URL": "http://$SERVER_IP:5000",
+      "EXPO_PUBLIC_TRACKING_INTERVAL": "2000",
+      "EXPO_PUBLIC_HIGH_FREQUENCY_MODE": "false",
+      "EXPO_PUBLIC_MIN_DISTANCE_FILTER": "5",
+      "EXPO_PUBLIC_USE_LEGACY_LOCATION_API": "false",
       "EXPO_PUBLIC_DEBUG_MODE": "false"
     },
     "build": {

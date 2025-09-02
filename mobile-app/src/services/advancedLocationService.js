@@ -230,7 +230,7 @@ class AdvancedLocationService {
     );
 
     const timeElapsed = (Date.now() - this.currentLocation.timestamp) / 1000; // segundos
-    const maxPossibleDistance = (200 / 3.6) * timeElapsed; // 200 km/h máximo
+    const maxPossibleDistance = (80 / 3.6) * timeElapsed; // 80 km/h máximo para motos en ciudad
 
     if (distance > maxPossibleDistance && timeElapsed > 0) {
       console.log(`🚨 Salto de ubicación detectado: ${distance.toFixed(0)}m en ${timeElapsed.toFixed(1)}s`);
@@ -257,7 +257,7 @@ class AdvancedLocationService {
       return { corrected: false, speed: location.speed };
     }
 
-    const maxReasonableSpeed = 200; // 200 km/h
+    const maxReasonableSpeed = 80; // 80 km/h máximo para motos de delivery
     
     if (location.speed > maxReasonableSpeed) {
       console.log(`🚨 Velocidad imposible corregida: ${location.speed.toFixed(1)} -> ${maxReasonableSpeed} km/h`);
@@ -290,10 +290,11 @@ class AdvancedLocationService {
   detectBasicActivity(location) {
     const speed = location.speed || 0;
     
-    if (speed < 1) return 'stationary';
-    if (speed < 8) return 'walking';
-    if (speed < 25) return 'cycling';
-    return 'driving';
+    if (speed < 2) return 'stationary'; // Parado en semáforo o entregando
+    if (speed < 10) return 'walking'; // Caminando con la moto
+    if (speed < 30) return 'city_riding'; // Manejando en ciudad
+    if (speed < 60) return 'highway_riding'; // Carretera/avenidas
+    return 'speeding'; // Exceso de velocidad
   }
 
   /**
