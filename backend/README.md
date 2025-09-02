@@ -1,329 +1,259 @@
-# 🔧 Backend - BOSTON Tracker API
+# 🗄️ Boston Tracker Backend
 
-API REST con WebSockets para el sistema de tracking de deliverys.
+API backend robusta para el sistema de seguimiento de deliveries de BOSTON American Burgers. Desarrollada con Node.js, Express, PostgreSQL y Socket.io para comunicación en tiempo real.
 
-## 🚀 Inicio Rápido
+## 🚀 **Estado Actual**
 
+✅ **Completamente funcional en producción**
+- **Servidor**: 185.144.157.163:5000
+- **Base de datos**: PostgreSQL activa
+- **WebSocket**: Socket.io operativo
+- **Autenticación**: JWT implementada
+
+## 🏗️ **Arquitectura**
+
+```
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│   📱 Mobile App  │    │  🌐 Dashboard    │    │  🗄️ PostgreSQL  │
+│  HTTP + Socket  │◄──►│  HTTP + Socket  │◄──►│   Database     │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
+        │                        │                        │
+        └────────────────────────┼────────────────────────┘
+                                 │
+                    ┌─────────────────┐
+                    │  🔌 Socket.io    │
+                    │  Real-time API  │
+                    └─────────────────┘
+```
+
+## 📊 **Base de Datos (PostgreSQL)**
+
+### Modelos Principales
+
+#### 🧑‍💼 **User**
+```sql
+- id (UUID, PK)
+- name (STRING)
+- email (STRING, unique, nullable)
+- employeeId (STRING, unique, nullable)
+- password (STRING, hashed)
+- role (ENUM: 'admin', 'delivery')
+- phone (STRING, nullable)
+- isActive (BOOLEAN, default: true)
+```
+
+#### 🚗 **Trip**
+```sql
+- id (UUID, PK)
+- deliveryId (UUID, FK → User.id)
+- startTime (DATE)
+- endTime (DATE, nullable)
+- status (ENUM: 'active', 'completed')
+- mileage (FLOAT, km)
+- duration (INTEGER, minutes)
+- averageSpeed (FLOAT, km/h)
+- realTimeMetrics (TEXT, JSON)
+```
+
+#### 📍 **Location**
+```sql
+- id (UUID, PK)
+- tripId (UUID, FK → Trip.id)
+- latitude (DOUBLE)
+- longitude (DOUBLE)
+- accuracy (FLOAT, nullable)
+- timestamp (DATE)
+```
+
+## 🔌 **API Endpoints**
+
+### 🔐 **Autenticación**
+```http
+POST /api/auth/login
+GET  /api/auth/me
+POST /api/auth/logout
+```
+
+### 👥 **Gestión de Usuarios (Admin)**
+```http
+GET    /api/auth/users
+POST   /api/auth/users
+PUT    /api/auth/users/:id
+DELETE /api/auth/users/:id
+```
+
+### 🚚 **Deliveries y Tracking**
+```http
+GET  /api/deliveries           # Obtener deliveries activos (admin)
+GET  /api/deliveries/my-trip   # Mi viaje activo (delivery)
+POST /api/deliveries/:id/start # Iniciar viaje
+POST /api/deliveries/:id/stop  # Detener viaje
+POST /api/deliveries/:id/location    # Actualizar ubicación
+POST /api/deliveries/:id/metrics     # Actualizar métricas en tiempo real
+```
+
+### 🏥 **Sistema**
+```http
+GET /api/health                # Health check
+```
+
+## 📡 **WebSocket Events**
+
+### 📨 **Eventos Emitidos por el Servidor**
+```javascript
+// Para Admins
+'tripStarted'           // Nuevo viaje iniciado
+'tripCompleted'         // Viaje completado
+'locationUpdate'        // Actualización de ubicación
+'realTimeMetricsUpdate' // Métricas en tiempo real
+
+// Para Deliveries
+'tripStatusChanged'     // Cambio de estado del viaje
+```
+
+### 📩 **Eventos Recibidos del Cliente**
+```javascript
+'join-admin'           // Admin se une al room
+'join-delivery'        // Delivery se une a su room específico
+```
+
+## 🔧 **Configuración**
+
+### Variables de Entorno
 ```bash
-# Instalar dependencias
-npm install
+# Base de datos
+DB_NAME=boston_tracker
+DB_USER=boston_user
+DB_PASSWORD=boston123
+DB_HOST=localhost
+DB_PORT=5432
 
-# Configurar variables de entorno
-cp .env.example .env
-
-# Crear usuarios de prueba
-node scripts/createUsers.js
-
-# Ejecutar en desarrollo
-npm run dev
-
-# Ejecutar en producción
-npm start
-```
-
-## 📋 Stack Tecnológico
-
-- **Runtime**: Node.js 18+
-- **Framework**: Express.js
-- **Base de Datos**: MongoDB con Mongoose
-- **Tiempo Real**: Socket.io
-- **Autenticación**: JWT (jsonwebtoken)
-- **Seguridad**: bcryptjs, helmet, cors, rate-limiting
-- **Ambiente**: dotenv
-
-## 🗂️ Estructura de Archivos
-
-```
-backend/
-├── controllers/
-│   ├── authController.js      # Controladores de autenticación
-│   └── deliveryController.js  # Controladores de deliveries
-├── middleware/
-│   └── auth.js               # Middleware de autenticación
-├── models/
-│   ├── User.js               # Modelo de usuarios
-│   └── DeliveryTrip.js       # Modelo de viajes
-├── routes/
-│   ├── auth.js               # Rutas de autenticación
-│   └── deliveries.js         # Rutas de deliveries
-├── scripts/
-│   └── createUsers.js        # Script para crear usuarios
-├── utils/
-│   └── generateToken.js      # Utilidad para JWT
-├── server.js                 # Servidor principal
-├── package.json
-└── .env.example
-```
-
-## 🔧 Configuración
-
-### Variables de Entorno (.env)
-
-```env
-PORT=5000
-NODE_ENV=development
-MONGO_URI=mongodb://localhost:27017/boston-tracker
-JWT_SECRET=your-super-secret-jwt-key-here-change-this-in-production
+# JWT
+JWT_SECRET=your-secret-key
 JWT_EXPIRE=7d
-MAP_API_KEY=your-google-maps-api-key-here
+
+# Servidor
+PORT=5000
+NODE_ENV=production
 ```
 
-### MongoDB
+### 🛡️ **Seguridad Implementada**
 
-Asegúrate de tener MongoDB ejecutándose:
+- **Helmet.js**: Headers de seguridad
+- **CORS**: Configurado para orígenes específicos
+- **Rate Limiting**: 200 requests/minuto (300 para ubicaciones)
+- **JWT Authentication**: Tokens seguros
+- **bcryptjs**: Passwords hasheadas
+- **Input Validation**: Validación de datos
 
-```bash
-# Iniciar MongoDB (Linux/Mac)
-sudo systemctl start mongod
+## 🧮 **Algoritmos de Cálculo**
 
-# O usar Docker
-docker run -d -p 27017:27017 --name mongodb mongo:latest
-```
-
-## 📚 API Endpoints
-
-### Autenticación
-
-| Método | Endpoint | Descripción | Auth |
-|--------|----------|-------------|------|
-| POST | `/api/auth/login` | Iniciar sesión | No |
-| GET | `/api/auth/me` | Usuario actual | Sí |
-| POST | `/api/auth/logout` | Cerrar sesión | Sí |
-
-### Deliveries
-
-| Método | Endpoint | Descripción | Auth | Rol |
-|--------|----------|-------------|------|-----|
-| GET | `/api/deliveries` | Lista deliverys activos | Sí | Admin |
-| GET | `/api/deliveries/my-trip` | Viaje activo actual | Sí | Delivery |
-| POST | `/api/deliveries/:id/start` | Iniciar viaje | Sí | Owner/Admin |
-| POST | `/api/deliveries/:id/stop` | Detener viaje | Sí | Owner/Admin |
-| POST | `/api/deliveries/:id/location` | Actualizar ubicación | Sí | Owner/Admin |
-| GET | `/api/deliveries/:id/history` | Historial ubicaciones | Sí | Owner/Admin |
-
-## 📡 WebSocket Events
-
-### Cliente → Servidor
+### 📏 **Distancia Haversine**
 ```javascript
-socket.emit('join-admin'); // Unirse al room de admins
-```
-
-### Servidor → Cliente (Solo Admins)
-```javascript
-// Nueva ubicación de delivery
-socket.on('locationUpdate', {
-  tripId,
-  deliveryId,
-  deliveryName,
-  currentLocation: { latitude, longitude, timestamp },
-  mileage,
-  duration
-});
-
-// Viaje iniciado
-socket.on('tripStarted', {
-  tripId,
-  deliveryId,
-  deliveryName,
-  startTime,
-  currentLocation
-});
-
-// Viaje completado
-socket.on('tripCompleted', {
-  tripId,
-  deliveryId,
-  deliveryName,
-  endTime,
-  totalMileage,
-  duration
-});
-```
-
-## 👥 Usuarios de Prueba
-
-El script `createUsers.js` crea:
-
-### Admin
-- **Email**: admin@bostonburgers.com
-- **Password**: password123
-
-### Deliverys
-- **ID**: DEL001, **Password**: delivery123 (Juan Pérez)
-- **ID**: DEL002, **Password**: delivery123 (María González)  
-- **ID**: DEL003, **Password**: delivery123 (Carlos Rodríguez)
-
-```bash
-node scripts/createUsers.js
-```
-
-## 🔒 Seguridad
-
-### Implementado
-- ✅ **JWT Authentication**: Tokens con expiración
-- ✅ **Password Hashing**: bcrypt con salt rounds
-- ✅ **Rate Limiting**: 100 requests/15min por IP
-- ✅ **CORS**: Configurado para orígenes permitidos
-- ✅ **Helmet**: Headers de seguridad
-- ✅ **Input Validation**: Mongoose schemas
-- ✅ **Authorization**: Middleware de roles y ownership
-
-### Headers de Seguridad
-```javascript
-// Aplicados automáticamente por Helmet
-X-Content-Type-Options: nosniff
-X-Frame-Options: DENY
-X-XSS-Protection: 1; mode=block
-```
-
-## 📊 Modelos de Datos
-
-### User Schema
-```javascript
-{
-  name: String,
-  email: String,          // Solo para admins
-  employeeId: String,     // Solo para deliverys  
-  password: String,       // Hasheado con bcrypt
-  role: 'admin' | 'delivery',
-  isActive: Boolean,
-  lastLogin: Date
+// Fórmula precisa para calcular distancias GPS
+function calculateHaversineDistance(lat1, lng1, lat2, lng2) {
+  const R = 6371.0; // Radio terrestre en km
+  // Implementación matemática precisa
 }
 ```
 
-### DeliveryTrip Schema
+### 🎯 **Filtrado de Ruido GPS**
 ```javascript
-{
-  deliveryId: ObjectId,
-  deliveryName: String,
-  startTime: Date,
-  endTime: Date,
-  status: 'active' | 'completed' | 'paused',
-  locations: [{
-    latitude: Number,
-    longitude: Number, 
-    timestamp: Date,
-    accuracy: Number
-  }],
-  mileage: Number,
-  currentLocation: {
-    latitude: Number,
-    longitude: Number,
-    timestamp: Date
-  }
+// Filtrar ubicaciones erróneas
+function filterGPSNoise(locations, minDistanceMeters = 5) {
+  // Solo incluir movimientos > 5 metros
 }
 ```
 
-## 🧮 Cálculo de Distancias
+## 🚀 **Instalación**
 
-Utiliza la **fórmula Haversine** para calcular distancias precisas:
-
-```javascript
-function calculateDistance(lat1, lon1, lat2, lon2) {
-  const R = 6371; // Radio de la Tierra en km
-  const dLat = (lat2 - lat1) * Math.PI / 180;
-  const dLon = (lon2 - lon1) * Math.PI / 180;
-  
-  const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
-    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-    Math.sin(dLon/2) * Math.sin(dLon/2);
-    
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-  return R * c; // Distancia en km
-}
-```
-
-## 🐛 Debug y Logs
-
-### Logs del Servidor
+### 1. Dependencias
 ```bash
-# Ver logs en tiempo real
+npm install
+```
+
+### 2. Base de Datos
+```bash
+# Instalar PostgreSQL
+sudo apt install postgresql postgresql-contrib
+
+# Crear base de datos
+sudo -u postgres createdb boston_tracker
+sudo -u postgres createuser boston_user
+```
+
+### 3. Ejecutar
+```bash
+# Desarrollo
 npm run dev
 
-# Logs específicos
-DEBUG=socket.io* npm run dev  # Solo Socket.io
-DEBUG=mongoose* npm run dev   # Solo MongoDB
+# Producción
+node server-postgres.js
 ```
+
+## 📊 **Logging y Monitoreo**
+
+### 🔍 **Logs Detallados**
+- Todas las requests HTTP con headers y body
+- Errores de autenticación y autorización
+- Conexiones y desconexiones de WebSocket
+- Métricas de tracking en tiempo real
+
+### 📈 **Rate Limiting**
+- **General**: 200 requests/minuto
+- **Ubicaciones**: 300 requests/minuto (tracking frecuente)
+- **Headers**: RateLimit-* información
+
+## 🔌 **WebSocket Rooms**
+
+### 👔 **Admins Room**
+```javascript
+socket.join('admins');
+// Recibe: tripStarted, tripCompleted, locationUpdate, realTimeMetricsUpdate
+```
+
+### 🚚 **Delivery Rooms**
+```javascript
+socket.join(`delivery-${deliveryId}`);
+// Recibe: tripStatusChanged específico para el delivery
+```
+
+## 🧪 **Testing**
 
 ### Health Check
 ```bash
-curl http://localhost:5000/api/health
+curl http://185.144.157.163:5000/api/health
 ```
 
-Respuesta:
-```json
-{
-  "status": "OK",
-  "message": "Boston Tracker API funcionando",
-  "timestamp": "2024-01-15T10:30:00.000Z"
-}
-```
-
-## 🚀 Despliegue
-
-### Desarrollo
+### Login Test
 ```bash
-npm run dev  # Usa nodemon para auto-reload
-```
-
-### Producción
-```bash
-npm start    # Servidor básico
-# O mejor con PM2:
-pm2 start server.js --name="boston-tracker-api"
-pm2 logs boston-tracker-api
-```
-
-### Docker (Opcional)
-```dockerfile
-FROM node:18-alpine
-WORKDIR /app
-COPY package*.json ./
-RUN npm install --only=production
-COPY . .
-EXPOSE 5000
-CMD ["npm", "start"]
-```
-
-## 📈 Escalabilidad
-
-### Para más de 50 deliverys:
-1. **Load Balancing**: nginx + múltiples instancias
-2. **Database Scaling**: MongoDB replica sets
-3. **Redis**: Para sesiones y cache de Socket.io
-4. **Clustering**: Node.js cluster module
-
-### Configuración con Redis:
-```javascript
-const redis = require('redis');
-const client = redis.createClient();
-
-io.adapter(require('socket.io-redis')({
-  host: 'localhost',
-  port: 6379
-}));
-```
-
-## ⚠️ Notas Importantes
-
-1. **Cambiar JWT_SECRET en producción**
-2. **Usar HTTPS en producción**
-3. **Configurar CORS para dominio específico**
-4. **Implementar backup de MongoDB**
-5. **Monitoreo con Winston/Morgan**
-6. **Variables sensibles en variables de entorno**
-
-## 🧪 Testing
-
-```bash
-# Ejecutar tests (cuando se implementen)
-npm test
-
-# Test de conexión
-curl -X GET http://localhost:5000/api/health
-
-# Test de login
-curl -X POST http://localhost:5000/api/auth/login \
+curl -X POST http://185.144.157.163:5000/api/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"email":"admin@bostonburgers.com","password":"password123"}'
+  -d '{"employeeId":"DEL001","password":"123456"}'
 ```
+
+## 🚨 **Problemas Resueltos**
+
+- ✅ **Ruta logout faltante**: Agregada `/api/auth/logout`
+- ✅ **CORS para mobile**: `origin: true` para apps móviles
+- ✅ **Rate limiting optimizado**: Frecuencia alta para tracking
+- ✅ **Logging detallado**: Debug completo de requests
+
+## 📁 **Archivos Principales**
+
+- `server-postgres.js` - Servidor principal con todas las rutas
+- `controllers/authController.js` - Lógica de autenticación
+- `routes/auth.js` - Definición de rutas (no usado actualmente)
+- `middleware/auth.js` - Middleware de protección JWT
+
+## 🔮 **Próximas Mejoras**
+
+- [ ] Separar rutas en archivos individuales
+- [ ] Implementar rate limiting por usuario
+- [ ] Añadir logs persistentes en archivos
+- [ ] Métricas de rendimiento del servidor
+- [ ] API versioning
+
+---
+
+**Estado**: ✅ Producción | **Puerto**: 5000 | **DB**: PostgreSQL

@@ -4,7 +4,7 @@ import Constants from 'expo-constants';
 // Configuración de la API
 const API_BASE_URL = __DEV__ 
   ? 'http://185.144.157.163:5000/api' // Servidor local con IP accesible desde móvil
-  : 'https://api.bostonburgers.com/api';
+  : 'http://185.144.157.163:5000/api';
 
 class ApiService {
   constructor() {

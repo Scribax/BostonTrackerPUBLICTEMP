@@ -47,6 +47,7 @@ const sequelize = new Sequelize(
 // Middleware de seguridad
 app.use(helmet());
 app.use(cors({
+  origin: true, // Permitir todos los origenes para mobile
   origin: [
     "http://localhost:3000",
     "http://192.168.1.36:3000",
@@ -83,6 +84,17 @@ const locationLimiter = rateLimit({
 app.use(limiter);
 
 app.use(express.json({ limit: '10mb' }));
+
+// MIDDLEWARE DE LOGGING DETALLADO
+app.use((req, res, next) => {
+  const timestamp = new Date().toISOString();
+  console.log(`📝 ${timestamp} - ${req.method} ${req.originalUrl}`);
+  console.log(`   Headers:`, JSON.stringify(req.headers, null, 2));
+  if (Object.keys(req.body).length > 0) {
+    console.log(`   Body:`, JSON.stringify(req.body, null, 2));
+  }
+  next();
+});
 app.use(express.urlencoded({ extended: true }));
 
 // MODELOS DE SEQUELIZE
@@ -379,6 +391,24 @@ app.post('/api/auth/login', async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Error interno del servidor'
+    });
+  }
+});
+
+// Logout
+app.post("/api/auth/logout", protect, (req, res) => {
+  try {
+    // En JWT no necesitamos hacer nada en el servidor
+    // El cliente debe eliminar el token
+    res.json({
+      success: true,
+      message: "Sesión cerrada exitosamente"
+    });
+  } catch (error) {
+    console.error("Error en logout:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error interno del servidor"
     });
   }
 });
