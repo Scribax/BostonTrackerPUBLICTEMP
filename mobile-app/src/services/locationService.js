@@ -1,6 +1,6 @@
 import * as Location from 'expo-location';
 import * as TaskManager from 'expo-task-manager';
-import { Alert, Linking } from 'react-native';
+import { Alert, Linking, AppState, Platform } from 'react-native';
 import Constants from 'expo-constants';
 import apiService from './apiService';
 import tripMetricsService from './tripMetricsService';
@@ -10,13 +10,13 @@ const BACKGROUND_LOCATION_TASK = 'background-location';
 
 // Configuración desde variables de entorno
 const CONFIG = {
-  TRACKING_INTERVAL: parseInt(Constants.expoConfig?.extra?.EXPO_PUBLIC_TRACKING_INTERVAL) || 1000, // 1 segundo por defecto
+  TRACKING_INTERVAL: parseInt(Constants.expoConfig?.extra?.EXPO_PUBLIC_TRACKING_INTERVAL) || 5000, // 5 segundos optimizado
   HIGH_FREQUENCY_MODE: Constants.expoConfig?.extra?.EXPO_PUBLIC_HIGH_FREQUENCY_MODE === 'true' || false,
-  MIN_DISTANCE_FILTER: parseInt(Constants.expoConfig?.extra?.EXPO_PUBLIC_MIN_DISTANCE_FILTER) || 2, // 2 metros
+  MIN_DISTANCE_FILTER: parseInt(Constants.expoConfig?.extra?.EXPO_PUBLIC_MIN_DISTANCE_FILTER) || 5, // 5 metros optimizado
   DEBUG_MODE: Constants.expoConfig?.extra?.EXPO_PUBLIC_DEBUG_MODE === 'true' || false,
-  BATCH_SIZE: 3, // Enviar en lotes de 3 ubicaciones (balance entre eficiencia y tiempo real)
-  MAX_BATCH_INTERVAL: 6000, // Máximo 6 segundos entre envíos
-  // Deshabilita el endpoint legacy /location para evitar sumar kilometraje en el backend
+  AGGRESSIVE_BACKGROUND_MODE: Constants.expoConfig?.extra?.EXPO_PUBLIC_AGGRESSIVE_BACKGROUND_MODE === 'true' || false,
+  BATCH_SIZE: 2, // Reducido para mejor tiempo real
+  MAX_BATCH_INTERVAL: 10000, // 10 segundos máximo
   USE_LEGACY_LOCATION_API: (Constants.expoConfig?.extra?.EXPO_PUBLIC_USE_LEGACY_LOCATION_API || 'false') === 'true',
 };
 
@@ -24,6 +24,7 @@ const CONFIG = {
 let locationBuffer = [];
 let lastSentLocation = null;
 let batchTimeout = null;
+let keepAliveTimer = null;
 
 class LocationService {
   constructor() {
@@ -31,6 +32,8 @@ class LocationService {
     this.currentUserId = null;
     this.lastKnownLocation = null;
     this.isTrackingActive = false;
+    this.foregroundSubscription = null;
+    this.appStateSubscription = null;
   }
 
   // Inicializar servicio
@@ -38,10 +41,10 @@ class LocationService {
     try {
       if (this.isInitialized) return true;
 
-      // Definir tarea en background
+      // Definir tarea en background con configuración mejorada
       TaskManager.defineTask(BACKGROUND_LOCATION_TASK, ({ data, error }) => {
         if (error) {
-          console.error('Error en background location task:', error);
+          console.error('❌ Error en background location task:', error);
           return;
         }
 
@@ -49,18 +52,92 @@ class LocationService {
           const { locations } = data;
           if (locations && locations.length > 0) {
             const location = locations[0];
+            console.log('📍 Background location received:', {
+              lat: location.coords.latitude,
+              lng: location.coords.longitude,
+              timestamp: new Date(location.timestamp).toLocaleTimeString(),
+              accuracy: location.coords.accuracy
+            });
             this.handleBackgroundLocation(location);
           }
         }
       });
 
+      // Escuchar cambios de estado de la app
+      this.appStateSubscription = AppState.addEventListener('change', (nextAppState) => {
+        console.log('📱 App State changed to:', nextAppState);
+        if (nextAppState === 'background' && this.isTrackingActive) {
+          this.onAppGoesToBackground();
+        } else if (nextAppState === 'active' && this.isTrackingActive) {
+          this.onAppComesToForeground();
+        }
+      });
+
       this.isInitialized = true;
-      console.log('✅ LocationService inicializado');
+      console.log('✅ LocationService inicializado con background tracking mejorado');
       return true;
 
     } catch (error) {
-      console.error('Error inicializando LocationService:', error);
+      console.error('❌ Error inicializando LocationService:', error);
       return false;
+    }
+  }
+
+  // Manejo cuando la app va a background
+  async onAppGoesToBackground() {
+    console.log('🌙 App va a background - Activando modo agresivo');
+    if (CONFIG.AGGRESSIVE_BACKGROUND_MODE && this.isTrackingActive) {
+      // Iniciar keep-alive timer para evitar que Android mate la tarea
+      this.startKeepAliveTimer();
+    }
+  }
+
+  // Manejo cuando la app vuelve a foreground
+  async onAppComesToForeground() {
+    console.log('🌅 App vuelve a foreground - Optimizando tracking');
+    this.stopKeepAliveTimer();
+    
+    // Reiniciar foreground tracking si está activo
+    if (this.isTrackingActive && this.currentUserId) {
+      this.startForegroundTracking(this.currentUserId);
+    }
+  }
+
+  // Timer para mantener la app viva en background
+  startKeepAliveTimer() {
+    if (keepAliveTimer) return;
+    
+    keepAliveTimer = setInterval(() => {
+      console.log('⏰ Keep-alive ping en background');
+      // Ping al servidor para mantener la conexión activa
+      this.sendKeepAlivePing();
+    }, 30000); // Cada 30 segundos
+  }
+
+  stopKeepAliveTimer() {
+    if (keepAliveTimer) {
+      clearInterval(keepAliveTimer);
+      keepAliveTimer = null;
+    }
+  }
+
+  // Ping para mantener conexión activa
+  async sendKeepAlivePing() {
+    try {
+      if (this.currentUserId && this.lastKnownLocation) {
+        // Enviar última ubicación conocida como keep-alive
+        await apiService.sendLocation({
+          user_id: this.currentUserId,
+          latitude: this.lastKnownLocation.coords.latitude,
+          longitude: this.lastKnownLocation.coords.longitude,
+          timestamp: new Date().toISOString(),
+          accuracy: this.lastKnownLocation.coords.accuracy,
+          isKeepAlive: true
+        });
+        console.log('💓 Keep-alive ping enviado');
+      }
+    } catch (error) {
+      console.log('⚠️ Keep-alive ping falló (normal si no hay internet)');
     }
   }
 
@@ -69,525 +146,382 @@ class LocationService {
     try {
       if (!this.currentUserId || !this.isTrackingActive) return;
 
-      console.log('📍 Background location update:', {
+      console.log('📍 Procesando background location:', {
         lat: location.coords.latitude.toFixed(6),
         lng: location.coords.longitude.toFixed(6),
-        accuracy: location.coords.accuracy?.toFixed(1) + 'm'
+        accuracy: Math.round(location.coords.accuracy),
+        timestamp: new Date(location.timestamp).toLocaleTimeString()
       });
 
-      // Procesar ubicación en el servicio de métricas para kilometraje real
+      this.lastKnownLocation = location;
+
+      // Preparar datos de ubicación
       const locationData = {
+        user_id: this.currentUserId,
         latitude: location.coords.latitude,
         longitude: location.coords.longitude,
+        altitude: location.coords.altitude || 0,
         accuracy: location.coords.accuracy,
-        altitude: location.coords.altitude,
-        heading: location.coords.heading,
-        speed: location.coords.speed,
-        timestamp: location.timestamp
+        speed: location.coords.speed || 0,
+        heading: location.coords.heading || 0,
+        timestamp: new Date(location.timestamp).toISOString(),
+        isBackground: true
       };
 
-      // Procesar métricas de viaje
-      if (tripMetricsService.hasActiveTrip()) {
-        const metricsResult = await tripMetricsService.processLocation(locationData);
-        if (metricsResult.success && CONFIG.DEBUG_MODE) {
-          const metrics = metricsResult.metrics;
-          if (metrics) {
-            console.log('📊 Métricas actualizadas:', {
-              distance: metrics.totalDistanceM + 'm',
-              speed: metrics.currentSpeed + ' km/h',
-              avgSpeed: metrics.averageSpeed + ' km/h'
-            });
-          }
+      // Añadir al buffer
+      locationBuffer.push(locationData);
+
+      // Enviar inmediatamente si es alta frecuencia o si el buffer está lleno
+      if (CONFIG.HIGH_FREQUENCY_MODE || locationBuffer.length >= CONFIG.BATCH_SIZE) {
+        await this.flushLocationBuffer();
+      } else {
+        // Programar envío si no hay timeout activo
+        if (!batchTimeout) {
+          batchTimeout = setTimeout(() => {
+            this.flushLocationBuffer();
+          }, CONFIG.MAX_BATCH_INTERVAL);
         }
       }
 
-      // Enviar ubicación al servidor (solo si se habilita explícitamente el modo legacy)
-      if (CONFIG.USE_LEGACY_LOCATION_API) {
-        const result = await apiService.updateLocation(this.currentUserId, {
-          latitude: location.coords.latitude,
-          longitude: location.coords.longitude,
-          accuracy: location.coords.accuracy
-        });
-
-        if (!result.success) {
-          console.warn('Error enviando ubicación al servidor:', result.error);
-        }
-      } else if (CONFIG.DEBUG_MODE) {
-        console.log('⏭️ Envío a /location deshabilitado (usando solo métricas en tiempo real)');
-      }
-
-      // Actualizar última ubicación conocida
-      this.lastKnownLocation = {
-        latitude: location.coords.latitude,
-        longitude: location.coords.longitude,
-        accuracy: location.coords.accuracy,
-        timestamp: new Date(location.timestamp)
-      };
-
     } catch (error) {
-      console.error('Error manejando ubicación en background:', error);
+      console.error('❌ Error procesando background location:', error);
     }
   }
 
-  // Solicitar permisos de ubicación
-  async requestPermissions() {
-    try {
-      // Verificar si ya tenemos permisos
-      const { status: existingStatus } = await Location.getForegroundPermissionsAsync();
-      
-      let finalStatus = existingStatus;
-
-      // Si no tenemos permisos, solicitarlos
-      if (existingStatus !== 'granted') {
-        const { status } = await Location.requestForegroundPermissionsAsync();
-        finalStatus = status;
-      }
-
-      // Si no se concedieron permisos de primer plano
-      if (finalStatus !== 'granted') {
-        return {
-          success: false,
-          error: 'Se requieren permisos de ubicación para funcionar correctamente'
-        };
-      }
-
-      // Solicitar permisos de background
-      const { status: backgroundStatus } = await Location.requestBackgroundPermissionsAsync();
-      
-      if (backgroundStatus !== 'granted') {
-        console.warn('Permisos de background no concedidos');
-        // No fallar aquí, ya que algunos features pueden funcionar sin background
-      }
-
-      console.log('✅ Permisos de ubicación concedidos');
-      return { success: true };
-
-    } catch (error) {
-      console.error('Error solicitando permisos:', error);
-      return {
-        success: false,
-        error: 'Error obteniendo permisos de ubicación'
-      };
-    }
-  }
-
-  // Obtener ubicación actual
-  async getCurrentPosition() {
-    try {
-      const location = await Location.getCurrentPositionAsync({
-        accuracy: Location.Accuracy.High,
-        maximumAge: 10000, // 10 segundos
-        timeout: 15000, // 15 segundos timeout
-      });
-
-      const result = {
-        latitude: location.coords.latitude,
-        longitude: location.coords.longitude,
-        accuracy: location.coords.accuracy,
-        timestamp: new Date(location.timestamp)
-      };
-
-      this.lastKnownLocation = result;
-      
-      return {
-        success: true,
-        data: result
-      };
-
-    } catch (error) {
-      console.error('Error obteniendo ubicación actual:', error);
-      
-      // Si falla, intentar con última ubicación conocida
-      if (this.lastKnownLocation) {
-        console.warn('Usando última ubicación conocida');
-        return {
-          success: true,
-          data: this.lastKnownLocation
-        };
-      }
-
-      return {
-        success: false,
-        error: 'No se pudo obtener la ubicación actual'
-      };
-    }
-  }
-
-  // Iniciar tracking de alta frecuencia
+  // Iniciar tracking de alta frecuencia optimizado para background
   async startHighFrequencyTracking(userId) {
     try {
-      if (!userId) {
-        throw new Error('UserId es requerido para iniciar tracking');
-      }
-
-      // Verificar permisos primero
-      const permissionsResult = await this.requestPermissions();
-      if (!permissionsResult.success) {
-        throw new Error(permissionsResult.error);
+      if (this.isTrackingActive) {
+        console.log('⚠️ Tracking ya está activo');
+        return { success: true };
       }
 
       this.currentUserId = userId;
       this.isTrackingActive = true;
-      
-      // Limpiar buffer anterior
-      locationBuffer = [];
-      lastSentLocation = null;
-      
-      if (CONFIG.DEBUG_MODE) {
-        console.log('🚀 Iniciando tracking de ALTA FRECUENCIA:', {
-          interval: CONFIG.TRACKING_INTERVAL + 'ms',
-          minDistance: CONFIG.MIN_DISTANCE_FILTER + 'm',
-          batchSize: CONFIG.BATCH_SIZE
-        });
-      }
 
-      // Configuración optimizada para alta frecuencia
+      // Configuración ultra-optimizada para background
       const trackingConfig = {
-        accuracy: Location.Accuracy.BestForNavigation, // Máxima precisión
-        timeInterval: CONFIG.TRACKING_INTERVAL, // 1 segundo o configurado
-        distanceInterval: CONFIG.MIN_DISTANCE_FILTER, // 2 metros mínimo
+        accuracy: Location.Accuracy.BestForNavigation,
+        timeInterval: CONFIG.TRACKING_INTERVAL,
+        distanceInterval: CONFIG.MIN_DISTANCE_FILTER,
         deferredUpdatesInterval: CONFIG.TRACKING_INTERVAL,
+        // Configuración crítica para background
+        mayShowUserSettingsDialog: true,
         foregroundService: {
-          notificationTitle: 'BOSTON Tracker 🍔',
-          notificationBody: '📍 Tracking preciso activo - ' + (CONFIG.TRACKING_INTERVAL/1000) + 's',
+          notificationTitle: 'BOSTON Tracker 🍔 - Tracking Activo',
+          notificationBody: `📍 Ubicación actualizada cada ${CONFIG.TRACKING_INTERVAL/1000}s - No cerrar para mantener precisión`,
           notificationColor: '#dc3545',
+          killServiceOnDestroy: false, // CRÍTICO: No matar el servicio
         },
+        // Configuraciones adicionales para Android
+        pausesLocationUpdatesAutomatically: false, // No pausar automáticamente
+        activityType: Location.ActivityType.AutomotiveNavigation, // Tipo de actividad para delivery
+        showsBackgroundLocationIndicator: true, // Mostrar indicador en iOS
       };
 
+      console.log('🚀 Iniciando background tracking optimizado:', {
+        interval: CONFIG.TRACKING_INTERVAL + 'ms',
+        minDistance: CONFIG.MIN_DISTANCE_FILTER + 'm',
+        aggressive: CONFIG.AGGRESSIVE_BACKGROUND_MODE,
+        userId: userId
+      });
+
+      // Iniciar background location
       await Location.startLocationUpdatesAsync(BACKGROUND_LOCATION_TASK, trackingConfig);
       
-      // Iniciar tracking de foreground también para máxima frecuencia
+      // Iniciar tracking de foreground también para redundancia
       if (CONFIG.HIGH_FREQUENCY_MODE) {
         this.startForegroundTracking(userId);
       }
 
-      console.log('✅ Tracking de ALTA FRECUENCIA iniciado');
+      // Iniciar keep-alive timer inmediatamente
+      if (CONFIG.AGGRESSIVE_BACKGROUND_MODE) {
+        this.startKeepAliveTimer();
+      }
+
+      console.log('✅ Background tracking OPTIMIZADO iniciado');
       return { success: true };
 
     } catch (error) {
-      console.error('Error iniciando tracking de alta frecuencia:', error);
+      console.error('❌ Error iniciando background tracking:', error);
       this.isTrackingActive = false;
       this.currentUserId = null;
       
       return {
         success: false,
-        error: error.message || 'Error iniciando tracking de alta frecuencia'
+        error: error.message || 'Error iniciando background tracking'
       };
     }
   }
-  
-  // Tracking adicional en foreground para máxima frecuencia
-  startForegroundTracking(userId) {
-    if (this.foregroundInterval) {
-      clearInterval(this.foregroundInterval);
-    }
-    
-    this.foregroundInterval = setInterval(async () => {
-      if (!this.isTrackingActive) {
-        clearInterval(this.foregroundInterval);
-        return;
+
+  // Tracking en foreground como backup
+  async startForegroundTracking(userId) {
+    try {
+      if (this.foregroundSubscription) {
+        this.foregroundSubscription.remove();
       }
-      
-      try {
-        const location = await Location.getCurrentPositionAsync({
+
+      this.foregroundSubscription = await Location.watchPositionAsync(
+        {
           accuracy: Location.Accuracy.BestForNavigation,
-          maximumAge: 500, // Máximo 500ms de antigüedad
-          timeout: 2000, // Timeout rápido
-        });
-        
-        await this.processHighFrequencyLocation(location, userId);
-        
-      } catch (error) {
-        if (CONFIG.DEBUG_MODE) {
-          console.warn('Error en foreground tracking:', error.message);
+          timeInterval: Math.max(CONFIG.TRACKING_INTERVAL / 2, 2000), // Más frecuente en foreground
+          distanceInterval: CONFIG.MIN_DISTANCE_FILTER,
+        },
+        (location) => {
+          console.log('📱 Foreground location:', {
+            lat: location.coords.latitude.toFixed(6),
+            lng: location.coords.longitude.toFixed(6),
+            timestamp: new Date(location.timestamp).toLocaleTimeString()
+          });
+          this.handleBackgroundLocation(location); // Usar la misma lógica
         }
-      }
-    }, CONFIG.TRACKING_INTERVAL);
-  }
-  
-  // Procesar ubicación de alta frecuencia con filtros inteligentes
-  async processHighFrequencyLocation(location, userId) {
-    const newLocation = {
-      latitude: location.coords.latitude,
-      longitude: location.coords.longitude,
-      accuracy: location.coords.accuracy,
-      timestamp: new Date(location.timestamp)
-    };
-    
-    // Filtrar por precisión (optimizado para motos en ciudad)
-    if (newLocation.accuracy > 25) { // Más de 25 metros de error, ignorar (balance entre precisión y disponibilidad)
-      if (CONFIG.DEBUG_MODE) {
-        console.warn('🚨 Ubicación ignorada por baja precisión:', newLocation.accuracy + 'm');
-      }
-      return;
-    }
-    
-    // Filtrar por movimiento mínimo
-    if (lastSentLocation) {
-      const distance = this.calculateDistance(
-        lastSentLocation.latitude,
-        lastSentLocation.longitude,
-        newLocation.latitude,
-        newLocation.longitude
       );
-      
-      // Si se movió menos del filtro mínimo, ignorar
-      if (distance * 1000 < CONFIG.MIN_DISTANCE_FILTER) {
-        if (CONFIG.DEBUG_MODE) {
-          console.log('🔄 Movimiento mínimo ignorado:', Math.round(distance * 1000) + 'm');
-        }
-        return;
-      }
-    }
-    
-    // Procesar métricas también en foreground para mantener consistencia
-    if (tripMetricsService.hasActiveTrip()) {
-      try {
-        await tripMetricsService.processLocation(newLocation);
-      } catch (e) {
-        if (CONFIG.DEBUG_MODE) console.warn('Error procesando métricas en foreground:', e?.message || e);
-      }
-    }
 
-    if (CONFIG.USE_LEGACY_LOCATION_API) {
-      // Añadir al buffer solo en modo legacy
-      locationBuffer.push(newLocation);
-      
-      if (CONFIG.DEBUG_MODE) {
-        console.log('📍 Nueva ubicación bufferizada:', {
-          lat: newLocation.latitude.toFixed(6),
-          lng: newLocation.longitude.toFixed(6),
-          accuracy: newLocation.accuracy.toFixed(1) + 'm',
-          buffer: locationBuffer.length + '/' + CONFIG.BATCH_SIZE
-        });
-      }
-      
-      // Enviar cuando el buffer esté lleno o haya pasado el tiempo máximo
-      if (locationBuffer.length >= CONFIG.BATCH_SIZE) {
-        await this.sendLocationBatch(userId);
-      } else if (!batchTimeout) {
-        batchTimeout = setTimeout(() => {
-          this.sendLocationBatch(userId);
-        }, CONFIG.MAX_BATCH_INTERVAL);
-      }
-    }
-    
-    // Actualizar última ubicación conocida (siempre)
-    this.lastKnownLocation = newLocation;
-    lastSentLocation = newLocation;
-  }
-  
-  // Enviar lote de ubicaciones al servidor
-  async sendLocationBatch(userId) {
-    if (locationBuffer.length === 0) return;
-    
-    // Limpiar timeout si existe
-    if (batchTimeout) {
-      clearTimeout(batchTimeout);
-      batchTimeout = null;
-    }
-    
-    const batch = [...locationBuffer];
-    locationBuffer = []; // Limpiar buffer
-    
-    try {
-      if (!CONFIG.USE_LEGACY_LOCATION_API) {
-        if (CONFIG.DEBUG_MODE) console.log('⏭️ Modo legacy deshabilitado: no se envía lote a /location');
-        return;
-      }
-      if (CONFIG.DEBUG_MODE) {
-        console.log('🚀 Enviando lote de', batch.length, 'ubicaciones');
-      }
-      
-      // Enviar la última ubicación del lote (la más reciente)
-      const latestLocation = batch[batch.length - 1];
-      
-      const result = await apiService.updateLocation(userId, {
-        latitude: latestLocation.latitude,
-        longitude: latestLocation.longitude,
-        accuracy: latestLocation.accuracy
-      });
-      
-      if (result.success) {
-        if (CONFIG.DEBUG_MODE) {
-          console.log('✅ Lote enviado exitosamente. Respuesta:', result.data);
-        }
-      } else {
-        console.warn('⚠️ Error enviando lote al servidor:', result.error);
-        // Re-agregar al buffer si falla (con límite para evitar acumulación infinita)
-        if (locationBuffer.length < CONFIG.BATCH_SIZE * 3) {
-          locationBuffer.unshift(...batch.slice(-2)); // Solo re-agregar las 2 últimas
-        }
-      }
-      
+      console.log('✅ Foreground tracking iniciado como backup');
     } catch (error) {
-      console.error('🚨 Error crítico enviando lote:', error);
-      // Re-agregar ubicación más reciente en caso de error
-      if (locationBuffer.length < CONFIG.BATCH_SIZE * 2) {
-        locationBuffer.unshift(batch[batch.length - 1]);
-      }
+      console.error('❌ Error iniciando foreground tracking:', error);
     }
   }
 
-  // Iniciar tracking de ubicación (método legacy, ahora usa alta frecuencia)
-  async startLocationTracking(userId) {
-    return await this.startHighFrequencyTracking(userId);
+  // Detener tracking
+  async stopTracking() {
+    try {
+      this.isTrackingActive = false;
+      this.currentUserId = null;
+
+      // Detener background task
+      const isRegistered = await TaskManager.isTaskRegisteredAsync(BACKGROUND_LOCATION_TASK);
+      if (isRegistered) {
+        await Location.stopLocationUpdatesAsync(BACKGROUND_LOCATION_TASK);
+      }
+
+      // Detener foreground tracking
+      if (this.foregroundSubscription) {
+        this.foregroundSubscription.remove();
+        this.foregroundSubscription = null;
+      }
+
+      // Detener keep-alive
+      this.stopKeepAliveTimer();
+
+      // Enviar buffer pendiente
+      await this.flushLocationBuffer();
+
+      console.log('🛑 Tracking detenido completamente');
+      return { success: true };
+
+    } catch (error) {
+      console.error('❌ Error deteniendo tracking:', error);
+      return { success: false, error: error.message };
+    }
   }
 
-  // Detener tracking de ubicación
-  async stopLocationTracking() {
+  // Enviar buffer de ubicaciones
+  async flushLocationBuffer() {
+    if (locationBuffer.length === 0) return;
+
     try {
-      // Detener foreground tracking si está activo
-      if (this.foregroundInterval) {
-        clearInterval(this.foregroundInterval);
-        this.foregroundInterval = null;
-        if (CONFIG.DEBUG_MODE) {
-          console.log('✅ Foreground tracking detenido');
-        }
-      }
-      
-      // Limpiar batch timeout si existe
+      // Limpiar timeout
       if (batchTimeout) {
         clearTimeout(batchTimeout);
         batchTimeout = null;
       }
-      
-      // Enviar último lote si hay ubicaciones pendientes
-      if (locationBuffer.length > 0 && this.currentUserId) {
-        await this.sendLocationBatch(this.currentUserId);
-      }
-      
-      // Limpiar buffers
-      locationBuffer = [];
-      lastSentLocation = null;
-      
-      // Verificar si TaskManager.isTaskRunningAsync existe
-      let isRunning = true; // Asumir que está corriendo por seguridad
-      
-      try {
-        if (TaskManager.isTaskRunningAsync && typeof TaskManager.isTaskRunningAsync === 'function') {
-          isRunning = await TaskManager.isTaskRunningAsync(BACKGROUND_LOCATION_TASK);
+
+      const locationsToSend = [...locationBuffer];
+      locationBuffer = []; // Limpiar buffer inmediatamente
+
+      console.log(`📤 Enviando ${locationsToSend.length} ubicaciones en batch`);
+
+      for (const locationData of locationsToSend) {
+        try {
+          await apiService.sendLocation(locationData);
+          lastSentLocation = locationData;
+        } catch (error) {
+          console.error('❌ Error enviando ubicación individual:', error);
+          // Volver a añadir al buffer si falla
+          locationBuffer.unshift(locationData);
         }
-      } catch (taskError) {
-        console.warn('Error verificando estado de tarea, procedera a detener:', taskError);
-      }
-      
-      // Intentar detener updates en background
-      try {
-        await Location.stopLocationUpdatesAsync(BACKGROUND_LOCATION_TASK);
-        console.log('✅ Background tracking detenido');
-      } catch (stopError) {
-        console.warn('Error deteniendo updates de ubicación:', stopError);
       }
 
-      this.isTrackingActive = false;
-      this.currentUserId = null;
-      this.lastKnownLocation = null;
-      
-      if (CONFIG.DEBUG_MODE) {
-        console.log('✅ Tracking de ALTA FRECUENCIA completamente detenido');
-      }
-
-      return { success: true };
+      console.log('✅ Batch de ubicaciones enviado');
 
     } catch (error) {
-      console.error('Error deteniendo tracking:', error);
-      return {
-        success: false,
-        error: 'Error deteniendo tracking de ubicación'
-      };
+      console.error('❌ Error en flush de ubicaciones:', error);
     }
   }
 
-  // Calcular distancia entre dos puntos usando fórmula Haversine
-  calculateDistance(lat1, lon1, lat2, lon2) {
-    const R = 6371; // Radio de la Tierra en kilómetros
-    const dLat = this.toRadians(lat2 - lat1);
-    const dLon = this.toRadians(lon2 - lon1);
-    
-    const a = 
-      Math.sin(dLat/2) * Math.sin(dLat/2) +
-      Math.cos(this.toRadians(lat1)) * Math.cos(this.toRadians(lat2)) * 
-      Math.sin(dLon/2) * Math.sin(dLon/2);
-      
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-    const distance = R * c;
-    
-    return Math.round(distance * 1000) / 1000; // Redondear a 3 decimales
-  }
-
-  // Convertir grados a radianes
-  toRadians(degrees) {
-    return degrees * (Math.PI / 180);
-  }
-
-  // Obtener estado del tracking
-  isTracking() {
-    return this.isTrackingActive;
-  }
-
-  // Obtener última ubicación conocida
-  getLastKnownLocation() {
-    return this.lastKnownLocation;
-  }
-
-  // Abrir configuración de la app
-  openSettings() {
-    Linking.openSettings();
-  }
-
-  // Manejar cuando la app va a background
-  onAppBackground() {
-    console.log('📱 App va a background - tracking continúa');
-    // El tracking en background ya está configurado, no necesitamos hacer nada
-  }
-
-  // Manejar cuando la app vuelve a foreground
-  onAppForeground() {
-    console.log('📱 App vuelve a foreground');
-    // Verificar estado del tracking si es necesario
-    this.checkTrackingStatus();
-  }
-
-  // Verificar estado del tracking
-  async checkTrackingStatus() {
+  // Solicitar permisos optimizados
+  async requestPermissions() {
     try {
-      let isRunning = false;
+      console.log('🔐 Solicitando permisos de ubicación optimizados...');
+
+      // Paso 1: Permisos básicos
+      const foregroundPermission = await Location.requestForegroundPermissionsAsync();
       
-      // Verificar si la función existe antes de usarla
-      if (TaskManager.isTaskRunningAsync && typeof TaskManager.isTaskRunningAsync === 'function') {
-        try {
-          isRunning = await TaskManager.isTaskRunningAsync(BACKGROUND_LOCATION_TASK);
-        } catch (taskError) {
-          console.warn('Error verificando si tarea está corriendo:', taskError);
-          // Asumir que no está corriendo si hay error
-          isRunning = false;
-        }
+      if (foregroundPermission.status !== 'granted') {
+        Alert.alert(
+          'Permisos de Ubicación Requeridos',
+          'Boston Tracker necesita acceso a tu ubicación para funcionar correctamente.',
+          [
+            { text: 'Configuración', onPress: () => Linking.openSettings() },
+            { text: 'Cancelar', style: 'cancel' }
+          ]
+        );
+        return false;
       }
+
+      // Paso 2: Permisos de background (crítico)
+      const backgroundPermission = await Location.requestBackgroundPermissionsAsync();
       
-      if (this.isTrackingActive && !isRunning) {
-        console.warn('⚠️ Tracking debería estar activo pero no está corriendo');
-        // Intentar reiniciar si es necesario
-        if (this.currentUserId) {
-          await this.startLocationTracking(this.currentUserId);
-        }
+      if (backgroundPermission.status !== 'granted') {
+        Alert.alert(
+          '⚠️ Permiso de Ubicación en Background Crítico',
+          'Para un tracking preciso durante deliveries, debes permitir "Permitir siempre" en la configuración de ubicación.\n\nSin esto, el tracking se detendrá cuando guardes el teléfono.',
+          [
+            { text: 'Abrir Configuración', onPress: () => Linking.openSettings() },
+            { text: 'Continuar sin background', style: 'cancel' }
+          ]
+        );
+        // Continuar pero con funcionalidad limitada
       }
+
+      // Verificar configuración de batería
+      if (Platform.OS === 'android') {
+        this.checkBatteryOptimization();
+      }
+
+      console.log('✅ Permisos configurados:', {
+        foreground: foregroundPermission.status,
+        background: backgroundPermission.status
+      });
+
+      return true;
+
     } catch (error) {
-      console.error('Error verificando estado del tracking:', error);
+      console.error('❌ Error solicitando permisos:', error);
+      return false;
+    }
+  }
+
+  // Verificar optimización de batería (Android)
+  async checkBatteryOptimization() {
+    try {
+      Alert.alert(
+        '🔋 Optimización de Batería',
+        'Para el mejor tracking de deliveries:\n\n1. Ve a Configuración → Batería → Optimización de batería\n2. Busca "Boston Tracker"\n3. Selecciona "No optimizar"\n\nEsto evita que Android detenga el GPS en background.',
+        [
+          { text: 'Configurar Ahora', onPress: () => Linking.openSettings() },
+          { text: 'Recordar Después', style: 'cancel' }
+        ]
+      );
+    } catch (error) {
+      console.log('ℹ️ No se pudo verificar optimización de batería');
+    }
+  }
+
+  // Obtener ubicación actual
+  async getCurrentLocation() {
+    try {
+      const location = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.BestForNavigation,
+        maximumAge: 1000, // Máximo 1 segundo de cache
+        timeout: 10000, // 10 segundos timeout
+      });
+
+      this.lastKnownLocation = location;
+      return location;
+
+    } catch (error) {
+      console.error('❌ Error obteniendo ubicación actual:', error);
+      throw error;
+    }
+  }
+
+  // Verificar si TaskManager está funcionando
+  async isBackgroundTaskRunning() {
+    try {
+      const isRegistered = await TaskManager.isTaskRegisteredAsync(BACKGROUND_LOCATION_TASK);
+      const isLocationUpdatesDefined = await TaskManager.isTaskDefined(BACKGROUND_LOCATION_TASK);
+      
+      console.log('🔍 Estado de background task:', {
+        registered: isRegistered,
+        defined: isLocationUpdatesDefined,
+        tracking: this.isTrackingActive
+      });
+
+      return isRegistered && isLocationUpdatesDefined;
+    } catch (error) {
+      console.error('❌ Error verificando background task:', error);
+      return false;
+    }
+  }
+
+  // Diagnosticar problemas de tracking
+  async diagnoseTracking() {
+    try {
+      console.log('🔍 Diagnóstico de tracking:');
+      
+      // 1. Verificar permisos
+      const foregroundStatus = await Location.getForegroundPermissionsAsync();
+      const backgroundStatus = await Location.getBackgroundPermissionsAsync();
+      
+      console.log('📋 Permisos:', {
+        foreground: foregroundStatus.status,
+        background: backgroundStatus.status
+      });
+
+      // 2. Verificar estado de TaskManager
+      const taskRunning = await this.isBackgroundTaskRunning();
+      
+      // 3. Verificar configuración del dispositivo
+      const locationEnabled = await Location.hasServicesEnabledAsync();
+      
+      // 4. Obtener ubicación de prueba
+      let testLocation = null;
+      try {
+        testLocation = await this.getCurrentLocation();
+      } catch (error) {
+        console.log('❌ No se pudo obtener ubicación de prueba');
+      }
+
+      const diagnosis = {
+        permissions: {
+          foreground: foregroundStatus.status === 'granted',
+          background: backgroundStatus.status === 'granted'
+        },
+        services: {
+          locationEnabled,
+          taskRunning,
+          tracking: this.isTrackingActive
+        },
+        config: CONFIG,
+        testLocation: testLocation ? {
+          lat: testLocation.coords.latitude.toFixed(6),
+          lng: testLocation.coords.longitude.toFixed(6),
+          accuracy: Math.round(testLocation.coords.accuracy)
+        } : null
+      };
+
+      console.log('📊 Diagnóstico completo:', diagnosis);
+      return diagnosis;
+
+    } catch (error) {
+      console.error('❌ Error en diagnóstico:', error);
+      return { error: error.message };
     }
   }
 
   // Limpiar recursos
   cleanup() {
-    this.stopLocationTracking();
-    this.isInitialized = false;
-    this.currentUserId = null;
-    this.lastKnownLocation = null;
-    this.isTrackingActive = false;
+    this.stopTracking();
+    this.stopKeepAliveTimer();
+    
+    if (this.appStateSubscription) {
+      this.appStateSubscription.remove();
+      this.appStateSubscription = null;
+    }
   }
 }
 
-// Crear instancia singleton
 const locationService = new LocationService();
-
 export default locationService;

@@ -6,7 +6,7 @@ Directorio oficial de descargas para la aplicación móvil Boston Tracker.
 
 ### 📦 APK Oficial
 - **Archivo:** `boston-tracker-latest.apk`
-- **Versión:** v1.0.0
+- **Versión:** v1.0.1
 - **Tamaño:** ~66 MB
 - **Última actualización:** $(date '+%d/%m/%Y')
 
