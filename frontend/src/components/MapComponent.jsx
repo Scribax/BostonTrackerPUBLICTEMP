@@ -20,18 +20,50 @@ try {
   console.warn('Error configurando iconos de Leaflet:', e);
 }
 
-// Icono personalizado para deliveries
-const createDeliveryIcon = (isSelected = false) => {
+// Icono personalizado para deliveries CON NOMBRE ARRIBA
+const createDeliveryIcon = (deliveryName, employeeId, isSelected = false) => {
   try {
     const color = isSelected ? '#28a745' : '#dc3545';
+    const displayName = deliveryName || employeeId || 'Delivery';
+    
     return new L.DivIcon({
-      html: `<div style="background-color: ${color}; border: 3px solid white; border-radius: 50%; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; box-shadow: 0 3px 6px rgba(0,0,0,0.3); cursor: pointer;">
-               <i class="bi bi-scooter" style="color: white; font-size: 14px;"></i>
+      html: `<div style="position: relative; text-align: center;">
+               <!-- Nombre arriba del ícono -->
+               <div style="
+                 background-color: ${color}; 
+                 color: white; 
+                 padding: 2px 8px; 
+                 border-radius: 12px; 
+                 font-size: 11px; 
+                 font-weight: bold; 
+                 white-space: nowrap;
+                 margin-bottom: 2px;
+                 box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+                 border: 1px solid white;
+               ">
+                 ${displayName}
+               </div>
+               <!-- Ícono del scooter -->
+               <div style="
+                 background-color: ${color}; 
+                 border: 3px solid white; 
+                 border-radius: 50%; 
+                 width: 30px; 
+                 height: 30px; 
+                 display: flex; 
+                 align-items: center; 
+                 justify-content: center; 
+                 box-shadow: 0 3px 6px rgba(0,0,0,0.3); 
+                 cursor: pointer;
+                 margin: 0 auto;
+               ">
+                 <i class="bi bi-scooter" style="color: white; font-size: 14px;"></i>
+               </div>
              </div>`,
-      iconSize: [30, 30],
-      iconAnchor: [15, 15],
-      popupAnchor: [0, -15],
-      className: "delivery-marker-custom"
+      iconSize: [80, 50], // Aumentado para acomodar el nombre
+      iconAnchor: [40, 40], // Centrado en el ícono del scooter
+      popupAnchor: [0, -25], // Ajustado para el popup
+      className: "delivery-marker-with-name"
     });
   } catch (e) {
     console.warn('Error creando icono de delivery:', e);
@@ -224,7 +256,7 @@ const MapComponent = ({ deliveries = [], selectedDelivery, onDeliverySelect }) =
         onMapInstanceReady={setMapInstance}
       />
       
-      {/* Marcadores de deliveries */}
+      {/* Marcadores de deliveries CON NOMBRE ARRIBA */}
       {validDeliveries.map(delivery => (
         <Marker
           key={delivery.id || delivery.deliveryId}
@@ -232,7 +264,11 @@ const MapComponent = ({ deliveries = [], selectedDelivery, onDeliverySelect }) =
             delivery.currentLocation.latitude,
             delivery.currentLocation.longitude
           ]}
-          icon={createDeliveryIcon(selectedDelivery === delivery.id)}
+          icon={createDeliveryIcon(
+            delivery.deliveryName || delivery.name, 
+            delivery.employeeId,
+            selectedDelivery === delivery.id
+          )}
           eventHandlers={{
             click: () => handleMarkerClick(delivery)
           }}
@@ -241,7 +277,7 @@ const MapComponent = ({ deliveries = [], selectedDelivery, onDeliverySelect }) =
             <div className="text-center" style={{ minWidth: '200px' }}>
               <h6 className="mb-2">
                 <i className="bi bi-scooter me-2"></i>
-                {delivery.deliveryName}
+                {delivery.deliveryName || delivery.name || delivery.employeeId}
               </h6>
               <p className="mb-2">
                 <strong>ID:</strong> {delivery.employeeId}

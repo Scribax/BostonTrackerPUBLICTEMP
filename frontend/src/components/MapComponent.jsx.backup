@@ -26,10 +26,12 @@ const createDeliveryIcon = (isSelected = false) => {
     const color = isSelected ? '#28a745' : '#dc3545';
     return new L.DivIcon({
       html: `<div style="background-color: ${color}; border: 3px solid white; border-radius: 50%; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; box-shadow: 0 3px 6px rgba(0,0,0,0.3); cursor: pointer;">
-               <i class="bi bi-truck" style="color: white; font-size: 14px;"></i>
+               <i class="bi bi-scooter" style="color: white; font-size: 14px;"></i>
              </div>`,
       iconSize: [30, 30],
-      className: 'delivery-marker'
+      iconAnchor: [15, 15],
+      popupAnchor: [0, -15],
+      className: "delivery-marker-custom"
     });
   } catch (e) {
     console.warn('Error creando icono de delivery:', e);
@@ -238,7 +240,7 @@ const MapComponent = ({ deliveries = [], selectedDelivery, onDeliverySelect }) =
           <Popup>
             <div className="text-center" style={{ minWidth: '200px' }}>
               <h6 className="mb-2">
-                <i className="bi bi-truck me-2"></i>
+                <i className="bi bi-scooter me-2"></i>
                 {delivery.deliveryName}
               </h6>
               <p className="mb-2">
