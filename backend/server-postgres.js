@@ -1432,6 +1432,120 @@ app.delete("/api/trips/:id", protect, async (req, res) => {
 });
 
 
+
+// ================== RUTAS DE GESTIÓN APK Y WHATSAPP ==================
+
+// Generar enlace de WhatsApp para enviar APK
+app.post("/api/apk/send-whatsapp", protect, async (req, res) => {
+  try {
+    // Verificar que el usuario es admin
+    if (req.user.role !== "admin") {
+      return res.status(403).json({
+        success: false,
+        message: "Acceso denegado. Se requieren permisos de administrador."
+      });
+    }
+
+    const { phoneNumber, deliveryName, customMessage } = req.body;
+    
+    if (!phoneNumber) {
+      return res.status(400).json({
+        success: false,
+        message: "Número de teléfono es requerido"
+      });
+    }
+    
+    // URL del APK
+    const apkUrl = process.env.APK_URL || "http://185.144.157.163/apk/boston-tracker-latest.apk";
+    
+    // Limpiar número de teléfono (remover espacios, guiones, etc.)
+    const cleanPhone = phoneNumber.replace(/[^\d+]/g, "");
+    
+    // Mensaje predefinido
+    const defaultMessage = `🍔 *BOSTON American Burgers - App Delivery*\n\n¡Hola ${deliveryName || ""}! 👋\n\nTe envío la aplicación oficial de BOSTON Tracker para que puedas comenzar a trabajar como delivery.\n\n📱 *Descarga la app aquí:*\n${apkUrl}\n\n📋 *Instrucciones:*\n1️⃣ Descarga el archivo APK\n2️⃣ Permite instalación de "Fuentes desconocidas"\n3️⃣ Instala la aplicación\n4️⃣ Usa tus credenciales de empleado para login\n\n🚀 *¡Listo para comenzar!*\n\n*Cualquier duda, no dudes en contactarme.*\n\n---\nBOSTON American Burgers 🍔`;
+    
+    const finalMessage = customMessage || defaultMessage;
+    
+    // Generar URL de WhatsApp
+    const whatsappUrl = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(finalMessage)}`;
+    
+    // Log de la acción
+    console.log(`📱 WhatsApp APK send requested by ${req.user.name} to ${cleanPhone}`);
+    
+    res.json({
+      success: true,
+      message: "Enlace de WhatsApp generado exitosamente",
+      data: {
+        whatsappUrl,
+        phoneNumber: cleanPhone,
+        apkUrl,
+        message: finalMessage,
+        timestamp: new Date().toISOString()
+      }
+    });
+    
+  } catch (error) {
+    console.error("Error generando enlace de WhatsApp:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error generando enlace de WhatsApp"
+    });
+  }
+});
+
+// Obtener información del APK
+app.get("/api/apk/info", protect, async (req, res) => {
+  try {
+    // Verificar que el usuario es admin
+    if (req.user.role !== "admin") {
+      return res.status(403).json({
+        success: false,
+        message: "Acceso denegado. Se requieren permisos de administrador."
+      });
+    }
+    
+    const apkUrl = process.env.APK_URL || "http://185.144.157.163/apk/boston-tracker-latest.apk";
+    const apkPath = "/var/www/boston-tracker/apk/boston-tracker-latest.apk";
+    
+    // Obtener información del archivo APK
+    const fs = require("fs");
+    let fileStats = null;
+    
+    try {
+      fileStats = fs.statSync(apkPath);
+    } catch (error) {
+      console.error("Error leyendo archivo APK:", error);
+    }
+    
+    res.json({
+      success: true,
+      data: {
+        downloadUrl: apkUrl,
+        fileName: "boston-tracker-latest.apk",
+        fileSize: fileStats ? Math.round(fileStats.size / 1024 / 1024 * 100) / 100 : null, // MB
+        lastModified: fileStats ? fileStats.mtime : null,
+        version: "1.0.1",
+        buildDate: "2025-09-02",
+        compatible: "Android 6.0+",
+        features: [
+          "GPS Tracking en Background",
+          "Notificaciones Push", 
+          "Interfaz Optimizada",
+          "Modo Offline"
+        ]
+      }
+    });
+    
+  } catch (error) {
+    console.error("Error obteniendo información del APK:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error obteniendo información del APK"
+    });
+  }
+});
+
+
 // Socket.io
 io.on('connection', (socket) => {
   console.log('🔌 Cliente conectado:', socket.id);

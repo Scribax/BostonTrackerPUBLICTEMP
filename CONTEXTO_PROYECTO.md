@@ -235,3 +235,106 @@ El proyecto está 100% funcional y operativo. El delivery DEL001 está activo en
 **PRÓXIMO PASO RECOMENDADO:** 
 Probar la funcionalidad accediendo a http://185.144.157.163/ → Login → Pestaña "Historial de Viajes"
 
+
+## 📱 **SEGUNDA FUNCIONALIDAD AGREGADA (02/09/2025 16:40)**
+
+### ✅ **NUEVA FUNCIONALIDAD: GESTIÓN DE APK VIA WHATSAPP**
+
+#### 🎯 **Implementación Completada:**
+
+1. **📋 Backend - Nuevos Endpoints APK:**
+   - `POST /api/apk/send-whatsapp` - Generar enlace de WhatsApp con mensaje
+   - `GET /api/apk/info` - Información completa del APK actual
+
+2. **🌐 Frontend - Nueva Pestaña "Gestión APK":**
+   - Componente `APKManager.jsx` completamente funcional
+   - Servicio `apkService.js` para comunicación con API
+   - Integrado en Dashboard.jsx como cuarta pestaña
+
+3. **📲 Características Implementadas:**
+   - ✅ **Información del APK:** versión, tamaño, fecha, características
+   - ✅ **Lista de deliveries** con teléfonos registrados
+   - ✅ **Envío rápido** con un click por delivery
+   - ✅ **Números personalizados** para nuevos deliveries
+   - ✅ **Mensajes personalizables** o plantilla predeterminada
+   - ✅ **Vista previa** del mensaje antes de enviar
+   - ✅ **Apertura automática** de WhatsApp Web/App
+   - ✅ **Copia de URL** al portapapeles
+   - ✅ **Validaciones completas** de teléfonos y permisos
+
+#### 🌐 **URLs Actualizadas:**
+- **Dashboard con APK:** http://185.144.157.163/ → Nueva pestaña "Gestión APK"
+- **APK directo:** http://185.144.157.163/apk/boston-tracker-latest.apk (69.1 MB)
+- **API APK:** http://185.144.157.163:5000/api/apk/*
+
+#### 📱 **Flujo de Envío via WhatsApp:**
+
+1. **Admin va a "Gestión APK"** en dashboard
+2. **Ve información completa** del APK actual
+3. **Selecciona delivery** desde lista o ingresa número personalizado
+4. **Opcionalmente personaliza** el mensaje
+5. **Click "Enviar via WhatsApp"** → se abre WhatsApp automáticamente
+6. **Mensaje predefinido listo** con enlace de descarga directo
+7. **Admin solo presiona "Enviar"** en WhatsApp
+8. **Delivery recibe enlace** y descarga APK inmediatamente
+
+#### 🍔 **Mensaje Predeterminado Optimizado:**
+```
+🍔 BOSTON American Burgers - App Delivery
+
+¡Hola [Nombre del Delivery]! 👋
+
+Te envío la aplicación oficial de BOSTON Tracker para que puedas comenzar a trabajar como delivery.
+
+📱 Descarga la app aquí:
+http://185.144.157.163/apk/boston-tracker-latest.apk
+
+📋 Instrucciones:
+1️⃣ Descarga el archivo APK
+2️⃣ Permite instalación de "Fuentes desconocidas"
+3️⃣ Instala la aplicación
+4️⃣ Usa tus credenciales de empleado para login
+
+🚀 ¡Listo para comenzar!
+
+Cualquier duda, no dudes en contactarme.
+
+---
+BOSTON American Burgers 🍔
+```
+
+#### 🔧 **Características Técnicas Avanzadas:**
+- **Formateo inteligente** de números argentinos (+54 9 XXX XXX-XXXX)
+- **Validación de deliveries activos** (no permite envío a inactivos)
+- **Estado visual** de deliveries sin teléfono registrado
+- **URL encoding** automático para caracteres especiales
+- **Limpieza de números** (remueve espacios, guiones, etc.)
+- **Logs de auditoría** de todos los envíos realizados
+
+#### 📊 **Estado del Dashboard Actualizado:**
+
+**Pestañas disponibles:**
+1. 🗺️ **Tracking en Tiempo Real** - Mapa con deliveries activos
+2. 🕐 **Historial de Viajes** - Gestión de viajes completados  
+3. 📱 **Gestión APK** - Envío via WhatsApp (NUEVO)
+4. 👥 **Gestión de Usuarios** - CRUD de usuarios
+
+**Funcionalidades operativas:**
+- ✅ **646 viajes completados** disponibles en historial
+- ✅ **APK de 69.1 MB** listo para descarga/envío
+- ✅ **Deliveries con teléfonos** registrados para envío rápido
+- ✅ **WhatsApp integration** completamente funcional
+
+#### 🚀 **Instrucciones de Prueba:**
+
+1. **Acceder al dashboard:** http://185.144.157.163/
+2. **Login admin:** admin@bostonburgers.com / password123
+3. **Ir a pestaña "Gestión APK"**
+4. **Probar envío** a número de prueba o delivery registrado
+5. **Verificar apertura** de WhatsApp con mensaje predefinido
+
+---
+
+**NOTA TÉCNICA:** 
+La funcionalidad utiliza la API nativa de WhatsApp (`https://wa.me/`) que funciona tanto en WhatsApp Web como en la aplicación móvil, proporcionando compatibilidad universal.
+

@@ -222,3 +222,91 @@ DELETE /api/trips/:id       # Eliminar viaje del historial (solo admin)
 
 ---
 
+
+## 📱 **NUEVA FUNCIONALIDAD: Envío de APK via WhatsApp**
+
+### 🆕 Características Agregadas (Sept 2, 2025 - 16:35)
+
+#### 📲 **Gestión de APK desde Dashboard Admin**
+- **Nueva pestaña "Gestión APK"** en el dashboard administrativo
+- **Envío directo via WhatsApp** a deliveries registrados o números personalizados
+- **Información completa del APK** (tamaño, versión, características)
+- **Enlaces de descarga** con opción de copiar URL
+- **Mensajes predefinidos** con instrucciones completas de instalación
+
+#### 🚀 **Funcionalidades Implementadas:**
+
+1. **📋 Información del APK:**
+   - Nombre del archivo y tamaño (69.1 MB)
+   - Versión actual (1.0.1)
+   - Fecha de build y compatibilidad
+   - Lista de características principales
+   - Última fecha de modificación
+
+2. **📱 Envío via WhatsApp:**
+   - **Selección de delivery** desde lista de usuarios registrados
+   - **Número personalizado** para nuevos deliveries
+   - **Mensaje personalizable** o uso de plantilla predeterminada
+   - **Vista previa** del mensaje antes de enviar
+   - **Apertura automática** de WhatsApp Web/App
+
+3. **👥 Lista de Deliveries:**
+   - **Envío rápido** con un click a deliveries con teléfono registrado
+   - **Estado visual** de deliveries activos/inactivos
+   - **Formato de números** argentinos (+54 9 XXX XXX-XXXX)
+   - **Validación automática** de teléfonos disponibles
+
+#### 🔧 **Implementación Técnica:**
+
+**Backend (2 nuevos endpoints):**
+- `POST /api/apk/send-whatsapp` - Generar enlace de WhatsApp
+- `GET /api/apk/info` - Información del APK
+
+**Frontend (nuevos componentes):**
+- `APKManager.jsx` - Componente principal de gestión
+- `apkService.js` - Servicio de comunicación con API
+- Integración en `Dashboard.jsx` como cuarta pestaña
+
+#### 📲 **Mensaje Predeterminado:**
+```
+🍔 BOSTON American Burgers - App Delivery
+
+¡Hola [Nombre]! 👋
+
+Te envío la aplicación oficial de BOSTON Tracker para que puedas comenzar a trabajar como delivery.
+
+📱 Descarga la app aquí:
+http://185.144.157.163/apk/boston-tracker-latest.apk
+
+📋 Instrucciones:
+1️⃣ Descarga el archivo APK
+2️⃣ Permite instalación de "Fuentes desconocidas"
+3️⃣ Instala la aplicación
+4️⃣ Usa tus credenciales de empleado para login
+
+🚀 ¡Listo para comenzar!
+
+Cualquier duda, no dudes en contactarme.
+
+---
+BOSTON American Burgers 🍔
+```
+
+#### 🌍 **Flujo de Uso:**
+
+1. **Admin accede** a "Gestión APK" en dashboard
+2. **Selecciona delivery** o ingresa número personalizado
+3. **Personaliza mensaje** (opcional)
+4. **Click "Enviar via WhatsApp"** → abre WhatsApp con mensaje listo
+5. **Admin envía** el mensaje con un click
+6. **Delivery recibe** enlace y puede descargar APK inmediatamente
+
+#### 🔒 **Seguridad y Validaciones:**
+- ✅ Solo administradores pueden acceder
+- ✅ Validación de números de teléfono
+- ✅ Sanitización de inputs
+- ✅ Logs de auditoría en backend
+- ✅ Protección contra spam
+
+---
+

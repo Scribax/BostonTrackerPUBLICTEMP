@@ -6,6 +6,7 @@ import DeliveryList from './DeliveryList';
 import UserManagement from './UserManagement';
 import socketService from '../services/socket';
 import TripHistory from './TripHistory';
+import APKManager from './APKManager';
 import deliveryService from '../services/deliveryService';
 import toast from 'react-hot-toast';
 
@@ -356,6 +357,18 @@ const Dashboard = () => {
             <TripHistory />
           </Tab>
           
+
+          <Tab 
+            eventKey="apk" 
+            title={
+              <span>
+                <i className="bi bi-phone me-2"></i>
+                Gestión APK
+              </span>
+            }
+          >
+            <APKManager />
+          </Tab>
           <Tab 
             eventKey="users" 
             title={
