@@ -5,7 +5,6 @@ import MapComponent from './MapComponent';
 import DeliveryList from './DeliveryList';
 import UserManagement from './UserManagement';
 import socketService from '../services/socket';
-import TripHistory from './TripHistory';
 import deliveryService from '../services/deliveryService';
 import toast from 'react-hot-toast';
 
@@ -342,18 +341,6 @@ const Dashboard = () => {
                 loading={loading}
               />
             </div>
-          </Tab>
-
-          <Tab 
-            eventKey="history" 
-            title={
-              <span>
-                <i className="bi bi-clock-history me-2"></i>
-                Historial de Viajes
-              </span>
-            }
-          >
-            <TripHistory />
           </Tab>
           
           <Tab 

@@ -1205,6 +1205,233 @@ app.delete('/api/auth/users/:id', protect, async (req, res) => {
   }
 });
 
+
+// ================== RUTAS DE HISTORIAL DE VIAJES ==================
+
+// Obtener historial de viajes completados (solo admin)
+app.get("/api/trips/history", protect, async (req, res) => {
+  try {
+    // Verificar que el usuario es admin
+    if (req.user.role !== "admin") {
+      return res.status(403).json({
+        success: false,
+        message: "Acceso denegado. Se requieren permisos de administrador."
+      });
+    }
+
+    const { page = 1, limit = 20, sortBy = "endTime", sortOrder = "DESC" } = req.query;
+    const offset = (page - 1) * limit;
+
+    // Obtener viajes completados con información del delivery
+    const { count, rows: trips } = await Trip.findAndCountAll({
+      where: { status: "completed" },
+      include: [
+        {
+          model: User,
+          as: "delivery",
+          attributes: ["name", "employeeId"]
+        },
+        {
+          model: Location,
+          as: "locations",
+          attributes: ["latitude", "longitude", "timestamp"],
+          order: [["timestamp", "ASC"]]
+        }
+      ],
+      order: [[sortBy, sortOrder]],
+      limit: parseInt(limit),
+      offset: parseInt(offset)
+    });
+
+    // Formatear datos para el frontend
+    const formattedTrips = trips.map(trip => {
+      const locations = trip.locations || [];
+      const startLocation = locations.length > 0 ? locations[0] : null;
+      const endLocation = locations.length > 0 ? locations[locations.length - 1] : null;
+      
+      return {
+        id: trip.id,
+        deliveryId: trip.deliveryId,
+        deliveryName: trip.delivery.name,
+        employeeId: trip.delivery.employeeId,
+        startTime: trip.startTime,
+        endTime: trip.endTime,
+        duration: trip.duration, // en minutos
+        mileage: Math.round(trip.mileage * 1000) / 1000, // km con 3 decimales
+        averageSpeed: trip.averageSpeed,
+        totalLocations: locations.length,
+        startLocation: startLocation ? {
+          latitude: startLocation.latitude,
+          longitude: startLocation.longitude,
+          timestamp: startLocation.timestamp
+        } : null,
+        endLocation: endLocation ? {
+          latitude: endLocation.latitude,
+          longitude: endLocation.longitude,
+          timestamp: endLocation.timestamp
+        } : null,
+        realTimeMetrics: trip.realTimeMetrics ? JSON.parse(trip.realTimeMetrics) : null,
+        createdAt: trip.createdAt,
+        updatedAt: trip.updatedAt
+      };
+    });
+    
+    res.json({
+      success: true,
+      data: formattedTrips,
+      pagination: {
+        total: count,
+        page: parseInt(page),
+        limit: parseInt(limit),
+        totalPages: Math.ceil(count / limit)
+      }
+    });
+    
+  } catch (error) {
+    console.error("Error obteniendo historial de viajes:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error obteniendo historial de viajes"
+    });
+  }
+});
+
+// Obtener detalles de un viaje específico (solo admin)
+app.get("/api/trips/:id", protect, async (req, res) => {
+  try {
+    // Verificar que el usuario es admin
+    if (req.user.role !== "admin") {
+      return res.status(403).json({
+        success: false,
+        message: "Acceso denegado. Se requieren permisos de administrador."
+      });
+    }
+
+    const tripId = req.params.id;
+    
+    const trip = await Trip.findByPk(tripId, {
+      include: [
+        {
+          model: User,
+          as: "delivery",
+          attributes: ["name", "employeeId", "phone"]
+        },
+        {
+          model: Location,
+          as: "locations",
+          order: [["timestamp", "ASC"]]
+        }
+      ]
+    });
+
+    if (!trip) {
+      return res.status(404).json({
+        success: false,
+        message: "Viaje no encontrado"
+      });
+    }
+    
+    // Calcular estadísticas adicionales
+    const locations = trip.locations || [];
+    const routePoints = locations.map(loc => ({
+      latitude: loc.latitude,
+      longitude: loc.longitude,
+      timestamp: loc.timestamp
+    }));
+    
+    res.json({
+      success: true,
+      data: {
+        id: trip.id,
+        deliveryId: trip.deliveryId,
+        deliveryName: trip.delivery.name,
+        employeeId: trip.delivery.employeeId,
+        deliveryPhone: trip.delivery.phone,
+        startTime: trip.startTime,
+        endTime: trip.endTime,
+        duration: trip.duration,
+        mileage: trip.mileage,
+        averageSpeed: trip.averageSpeed,
+        status: trip.status,
+        totalLocations: locations.length,
+        routePoints: routePoints,
+        realTimeMetrics: trip.realTimeMetrics ? JSON.parse(trip.realTimeMetrics) : null,
+        createdAt: trip.createdAt,
+        updatedAt: trip.updatedAt
+      }
+    });
+    
+  } catch (error) {
+    console.error("Error obteniendo detalles del viaje:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error obteniendo detalles del viaje"
+    });
+  }
+});
+
+// Eliminar viaje del historial (solo admin)
+app.delete("/api/trips/:id", protect, async (req, res) => {
+  try {
+    // Verificar que el usuario es admin
+    if (req.user.role !== "admin") {
+      return res.status(403).json({
+        success: false,
+        message: "Acceso denegado. Se requieren permisos de administrador."
+      });
+    }
+
+    const tripId = req.params.id;
+    
+    // Buscar el viaje
+    const trip = await Trip.findByPk(tripId, {
+      include: [{ model: User, as: "delivery", attributes: ["name", "employeeId"] }]
+    });
+
+    if (!trip) {
+      return res.status(404).json({
+        success: false,
+        message: "Viaje no encontrado"
+      });
+    }
+    
+    // No permitir eliminar viajes activos
+    if (trip.status === "active") {
+      return res.status(400).json({
+        success: false,
+        message: "No se puede eliminar un viaje activo. Debe completarse primero."
+      });
+    }
+    
+    // Eliminar primero las ubicaciones asociadas
+    await Location.destroy({ where: { tripId: tripId } });
+    
+    // Luego eliminar el viaje
+    await trip.destroy();
+    
+    res.json({
+      success: true,
+      message: `Viaje de ${trip.delivery.name} (${trip.delivery.employeeId}) eliminado exitosamente`,
+      deletedTrip: {
+        id: trip.id,
+        deliveryName: trip.delivery.name,
+        employeeId: trip.delivery.employeeId,
+        startTime: trip.startTime,
+        endTime: trip.endTime,
+        mileage: trip.mileage
+      }
+    });
+    
+  } catch (error) {
+    console.error("Error eliminando viaje:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error eliminando viaje del historial"
+    });
+  }
+});
+
+
 // Socket.io
 io.on('connection', (socket) => {
   console.log('🔌 Cliente conectado:', socket.id);

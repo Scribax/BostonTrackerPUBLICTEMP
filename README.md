@@ -172,3 +172,53 @@ Proyecto propietario de BOSTON American Burgers.
 **Última actualización:** $(date '+%d/%m/%Y %H:%M')  
 **Versión:** v1.0.0  
 **Estado:** ✅ Producción
+
+## 📊 **NUEVA FUNCIONALIDAD: Historial de Viajes Completados**
+
+### 🆕 Características Agregadas (Sept 2, 2025)
+
+#### 📋 **Gestión de Historial de Viajes**
+- **Nueva pestaña** "Historial de Viajes" en el dashboard administrativo
+- **Visualización completa** de todos los viajes completados con métricas detalladas
+- **Estadísticas agregadas** por delivery: kilómetros totales, horas trabajadas, velocidad promedio
+- **Búsqueda y filtrado** por nombre de delivery o ID de empleado
+- **Ordenamiento** por cualquier columna (fecha, duración, distancia, velocidad)
+- **Paginación** para manejar grandes volúmenes de datos
+- **Eliminación controlada** de viajes del historial (solo administradores)
+
+#### 🔍 **Información Detallada por Viaje**
+- **Métricas completas:** distancia, duración, velocidad promedio/máxima
+- **Ubicaciones:** puntos GPS de inicio y final con coordenadas precisas
+- **Timestamps:** fechas y horas exactas de inicio y finalización
+- **Rutas:** número total de puntos GPS registrados durante el viaje
+- **Métricas en tiempo real:** datos de velocidad y tracking si están disponibles
+
+#### 🗑️ **Gestión de Datos**
+- **Eliminación segura:** confirmación requerida antes de eliminar
+- **Protección de datos:** no se pueden eliminar viajes activos
+- **Cascade delete:** elimina automáticamente las ubicaciones asociadas
+- **Logs de auditoría:** registro de todas las eliminaciones
+
+#### 🎯 **Endpoints API Nuevos**
+```bash
+GET  /api/trips/history     # Obtener historial paginado de viajes
+GET  /api/trips/:id         # Obtener detalles de un viaje específico  
+DELETE /api/trips/:id       # Eliminar viaje del historial (solo admin)
+```
+
+#### 💡 **Casos de Uso**
+- **Análisis de rendimiento** de deliveries individuales
+- **Reportes gerenciales** de productividad y eficiencia
+- **Auditoría de rutas** y tiempos de entrega
+- **Gestión de espacio** eliminando datos históricos innecesarios
+- **Métricas de negocio** para optimización operativa
+
+#### 🔧 **Detalles Técnicos**
+- **Componente:** `TripHistory.jsx` con Bootstrap y React hooks
+- **Servicio:** `tripService.js` para comunicación con API
+- **Paginación:** 20 registros por página por defecto
+- **Filtros:** búsqueda en tiempo real sin necesidad de botones
+- **UI/UX:** modales para detalles y confirmaciones de eliminación
+
+---
+
