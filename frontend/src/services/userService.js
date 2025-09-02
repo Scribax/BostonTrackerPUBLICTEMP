@@ -5,7 +5,7 @@ class UserService {
   async getAllUsers() {
     try {
       console.log('🔍 Obteniendo todos los usuarios...');
-      const response = await api.get('/auth/users');
+      const response = await api.get('auth/users');
       
       if (response.data.success) {
         console.log(`✅ ${response.data.count} usuarios obtenidos`);
@@ -30,7 +30,7 @@ class UserService {
   async createUser(userData) {
     try {
       console.log('➕ Creando nuevo usuario:', userData.name);
-      const response = await api.post('/auth/users', userData);
+      const response = await api.post('auth/users', userData);
       
       if (response.data.success) {
         console.log('✅ Usuario creado exitosamente');

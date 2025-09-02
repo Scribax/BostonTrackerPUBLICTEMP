@@ -23,7 +23,8 @@
         "buildType": "apk",
         "withoutCredentials": true,
         "env": {
-          "EXPO_PUBLIC_DEBUG_MODE": "false"
+          "EXPO_PUBLIC_DEBUG_MODE": "false",
+          "EXPO_PUBLIC_SERVER_URL": "http://185.144.157.163:5000"
         }
       },
       "ios": {
@@ -33,7 +34,7 @@
     },
     "development": {
       "android": {
-        "buildType": "developmentClient",
+        "buildType": "apk",
         "withoutCredentials": true,
         "env": {
           "EXPO_PUBLIC_DEBUG_MODE": "true"

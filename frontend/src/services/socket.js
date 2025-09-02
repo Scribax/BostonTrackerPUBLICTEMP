@@ -7,7 +7,7 @@ class SocketService {
   }
 
   connect(token) {
-    const serverURL = import.meta.env.VITE_SOCKET_URL || 'http://192.168.1.36:5000';
+    const serverURL = import.meta.env.VITE_SOCKET_URL || 'http://185.144.157.163:5000';
     
     this.socket = io(serverURL, {
       auth: {

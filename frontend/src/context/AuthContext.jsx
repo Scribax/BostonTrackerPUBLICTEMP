@@ -80,7 +80,7 @@ export const AuthProvider = ({ children }) => {
           api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
           
           // Verificar token con el servidor
-          const response = await api.get('/auth/me');
+          const response = await api.get('auth/me');
           
           dispatch({
             type: AUTH_ACTIONS.LOGIN_SUCCESS,
@@ -106,7 +106,7 @@ export const AuthProvider = ({ children }) => {
     try {
       dispatch({ type: AUTH_ACTIONS.SET_LOADING, payload: true });
       
-      const response = await api.post('/auth/login', credentials);
+      const response = await api.post('auth/login', credentials);
       
       if (response.data.success) {
         // Configurar token en axios
@@ -138,7 +138,7 @@ export const AuthProvider = ({ children }) => {
   // Logout
   const logout = async () => {
     try {
-      await api.post('/auth/logout');
+      await api.post('auth/logout');
     } catch (error) {
       console.error('Error en logout:', error);
     } finally {

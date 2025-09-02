@@ -5,7 +5,7 @@ class DeliveryService {
   // Obtener deliveries activos
   async getActiveDeliveries() {
     try {
-      const response = await api.get('/deliveries');
+      const response = await api.get('deliveries');
       return {
         success: true,
         data: response.data.data,
@@ -111,7 +111,7 @@ class DeliveryService {
   // Obtener viaje activo propio (para deliverys)
   async getMyActiveTrip() {
     try {
-      const response = await api.get('/deliveries/my-trip');
+      const response = await api.get('deliveries/my-trip');
       return {
         success: true,
         data: response.data.data
