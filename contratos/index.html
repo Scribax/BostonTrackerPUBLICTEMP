@@ -61,6 +61,12 @@
             border-bottom: 2px solid #3498db;
         }
         
+        .section h3 {
+            color: #34495e;
+            margin: 20px 0 10px 0;
+            font-size: 1.2em;
+        }
+        
         .section p {
             margin-bottom: 15px;
             text-align: justify;
@@ -76,33 +82,84 @@
         }
         
         .download-section {
-            background: #f8f9fa;
-            padding: 25px;
-            border-radius: 8px;
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            padding: 30px;
+            border-radius: 12px;
             text-align: center;
             margin: 30px 0;
+            border: 2px solid #3498db;
+        }
+        
+        .version-info {
+            background: #d4edda;
+            border: 2px solid #28a745;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+            text-align: center;
+        }
+        
+        .version-info h3 {
+            color: #155724;
+            margin-bottom: 10px;
+        }
+        
+        .version-info .version-number {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #28a745;
+            margin: 10px 0;
         }
         
         .download-btn {
             display: inline-block;
-            background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
             color: white;
-            padding: 15px 30px;
+            padding: 18px 35px;
             text-decoration: none;
-            border-radius: 6px;
+            border-radius: 8px;
             font-weight: bold;
-            margin: 10px;
-            transition: transform 0.3s ease;
+            font-size: 1.1em;
+            margin: 15px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
         }
         
         .download-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(52, 152, 219, 0.4);
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(40, 167, 69, 0.4);
+            background: linear-gradient(135deg, #34ce57 0%, #28a745 100%);
+        }
+        
+        .download-btn:active {
+            transform: translateY(-1px);
+        }
+        
+        .changelog {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 6px;
+        }
+        
+        .changelog h4 {
+            color: #856404;
+            margin-bottom: 10px;
+        }
+        
+        .changelog ul {
+            margin-left: 15px;
+        }
+        
+        .changelog li {
+            margin-bottom: 5px;
+            color: #856404;
         }
         
         .back-btn {
             display: inline-block;
-            background: #95a5a6;
+            background: #6c757d;
             color: white;
             padding: 12px 25px;
             text-decoration: none;
@@ -112,7 +169,7 @@
         }
         
         .back-btn:hover {
-            background: #7f8c8d;
+            background: #5a6268;
         }
         
         .highlight {
@@ -123,6 +180,19 @@
             border-radius: 4px;
         }
         
+        .critical-info {
+            background: #f8d7da;
+            border: 2px solid #dc3545;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        
+        .critical-info h4 {
+            color: #721c24;
+            margin-bottom: 10px;
+        }
+        
         .footer {
             text-align: center;
             padding: 20px;
@@ -130,16 +200,88 @@
             color: #666;
             font-size: 0.9em;
         }
+
+        .update-date {
+            font-size: 0.9em;
+            color: #666;
+            font-style: italic;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                margin: 10px;
+                border-radius: 8px;
+            }
+            
+            .content {
+                padding: 20px;
+            }
+            
+            .header {
+                padding: 20px;
+            }
+            
+            .header h1 {
+                font-size: 2em;
+            }
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
             <h1>🏃‍♂️ Boston Tracker</h1>
-            <p>Contratos y Términos de Uso</p>
+            <p>Contratos, Términos de Uso y Descarga Oficial</p>
         </div>
         
         <div class="content">
+            <!-- Información de versión actualizada -->
+            <div class="version-info">
+                <h3>📱 Aplicación Oficial</h3>
+                <div class="version-number">Versión 1.0.1</div>
+                <p class="update-date">🕒 Última actualización: 02/09/2025 - Background GPS Optimizado</p>
+                <p><strong>🔧 Mejoras recientes:</strong> GPS funciona 24/7 con pantalla apagada</p>
+            </div>
+            
+            <div class="download-section">
+                <h2>📥 Descargar Boston Tracker</h2>
+                <p><strong>Descarga la última versión optimizada para repartidores:</strong></p>
+                
+                <a href="/apk/boston-tracker-latest.apk" class="download-btn" id="download-btn">
+                    📱 Descargar APK v1.0.1
+                </a>
+                
+                <div class="changelog">
+                    <h4>🆕 Novedades en v1.0.1:</h4>
+                    <ul>
+                        <li>✅ <strong>GPS 24/7:</strong> Funciona con pantalla apagada</li>
+                        <li>✅ <strong>Tracking robusto:</strong> Ubicaciones cada 5 segundos</li>
+                        <li>✅ <strong>Notificación persistente:</strong> Protege la app de Android</li>
+                        <li>✅ <strong>Modo agresivo:</strong> Keep-alive en background</li>
+                        <li>✅ <strong>Optimización batería:</strong> Guías automáticas</li>
+                    </ul>
+                </div>
+                
+                <p style="margin-top: 15px; font-size: 0.9em; color: #666;">
+                    🔒 Al descargar, acepta automáticamente estos términos y condiciones.
+                </p>
+            </div>
+
+            <!-- Configuración crítica para repartidores -->
+            <div class="critical-info">
+                <h4>⚠️ CONFIGURACIÓN CRÍTICA PARA REPARTIDORES</h4>
+                <p><strong>Para que el GPS funcione con el celular en el bolsillo:</strong></p>
+                <ol style="margin-left: 20px; margin-top: 10px;">
+                    <li><strong>Optimización de Batería:</strong><br>
+                        <code>Configuración → Batería → Optimización → Boston Tracker → "No optimizar"</code></li>
+                    <li><strong>Permisos de Ubicación:</strong><br>
+                        <code>Configuración → Apps → Boston Tracker → Permisos → Ubicación → "Permitir siempre"</code></li>
+                    <li><strong>Inicio Automático:</strong><br>
+                        <code>Configuración → Apps → Boston Tracker → Inicio automático → Activar</code></li>
+                </ol>
+                <p style="margin-top: 15px;"><strong>🎯 Sin esta configuración, el GPS se detendrá al guardar el celular.</strong></p>
+            </div>
+            
             <div class="section">
                 <h2>📋 Términos y Condiciones de Uso</h2>
                 <p>
@@ -164,6 +306,7 @@
                     <li>No compartimos sus datos personales con terceros sin su consentimiento</li>
                     <li>Puede solicitar la eliminación de sus datos en cualquier momento</li>
                     <li>La aplicación requiere permisos de ubicación para funcionar correctamente</li>
+                    <li><strong>Datos en background:</strong> La app funciona 24/7 para deliveries precisos</li>
                 </ul>
                 
                 <h3>3. Responsabilidades</h3>
@@ -171,42 +314,83 @@
                     <li>Usted es responsable de mantener seguras sus credenciales de acceso</li>
                     <li>Debe notificar inmediatamente cualquier uso no autorizado de su cuenta</li>
                     <li>La aplicación se proporciona "tal como está" sin garantías explícitas</li>
+                    <li><strong>Configuración del dispositivo:</strong> Debe configurar correctamente los permisos para funcionamiento óptimo</li>
                 </ul>
             </div>
             
             <div class="section">
                 <h2>📱 Información de la Aplicación</h2>
-                <p><strong>Versión:</strong> 1.0.0</p>
+                <p><strong>Versión:</strong> <span id="app-version">1.0.1</span></p>
                 <p><strong>Plataforma:</strong> Android</p>
                 <p><strong>Requisitos:</strong> Android 6.0 (API 23) o superior</p>
-                <p><strong>Permisos requeridos:</strong></p>
+                <p><strong>Tamaño:</strong> 66M</p>
+                
+                <h3>🔐 Permisos requeridos:</h3>
                 <ul>
-                    <li>🌍 Acceso a ubicación (preciso y aproximado)</li>
-                    <li>📡 Acceso a internet</li>
-                    <li>🔋 Optimización de batería (para tracking en background)</li>
-                    <li>📱 Estado del teléfono (para identificación del dispositivo)</li>
+                    <li>🌍 <strong>Acceso a ubicación (preciso y aproximado)</strong></li>
+                    <li>📍 <strong>Ubicación en background</strong> - CRÍTICO para deliveries</li>
+                    <li>📡 <strong>Acceso a internet</strong></li>
+                    <li>🔋 <strong>Optimización de batería</strong> - Configurar "No optimizar"</li>
+                    <li>🚀 <strong>Foreground service</strong> - Para tracking 24/7</li>
+                    <li>📱 <strong>Estado del teléfono</strong> - Identificación del dispositivo</li>
+                    <li>⏰ <strong>Wake lock</strong> - Mantener GPS activo con pantalla apagada</li>
+                </ul>
+
+                <h3>🔧 Características Técnicas v1.0.1:</h3>
+                <ul>
+                    <li>📍 <strong>GPS 24/7:</strong> Funciona con pantalla apagada y celular en bolsillo</li>
+                    <li>⚡ <strong>Tracking cada 5 segundos:</strong> Balance óptimo precisión/batería</li>
+                    <li>🔔 <strong>Notificación persistente:</strong> Evita que Android mate la app</li>
+                    <li>🔄 <strong>Dual tracking:</strong> Background + Foreground simultáneos</li>
+                    <li>💓 <strong>Keep-alive:</strong> Ping cada 30s para mantener conexión</li>
+                    <li>📊 <strong>Diagnóstico automático:</strong> Verifica configuración del dispositivo</li>
                 </ul>
             </div>
-            
-            <div class="download-section">
-                <h2>📥 Descargar Boston Tracker</h2>
-                <p>Descargue la última versión de la aplicación para su dispositivo Android:</p>
-                <a href="/apk/boston-tracker-latest.apk" class="download-btn">
-                    📱 Descargar APK v1.0.0
-                </a>
-                <p style="margin-top: 15px; font-size: 0.9em; color: #666;">
-                    Al descargar, acepta automáticamente estos términos y condiciones.
-                </p>
+
+            <div class="section">
+                <h2>🚀 Instrucciones de Instalación</h2>
+                
+                <h3>Paso 1: Habilitar Fuentes Desconocidas</h3>
+                <p><code>Configuración → Seguridad → Fuentes desconocidas → Activar</code></p>
+                
+                <h3>Paso 2: Descargar e Instalar</h3>
+                <p>1. Haz clic en el botón de descarga arriba</p>
+                <p>2. Una vez descargado, toca el archivo APK</p>
+                <p>3. Permite la instalación cuando lo solicite</p>
+                
+                <h3>Paso 3: Configuración CRÍTICA</h3>
+                <div class="critical-info">
+                    <h4>🔋 OBLIGATORIO - Configurar Optimización de Batería:</h4>
+                    <ol style="margin-left: 20px;">
+                        <li><strong>Configuración → Batería → Optimización de batería</strong></li>
+                        <li><strong>Buscar "Boston Tracker"</strong></li>
+                        <li><strong>Seleccionar "No optimizar"</strong></li>
+                    </ol>
+                    <p style="margin-top: 10px; color: #721c24;"><strong>⚠️ Sin esto, el GPS se detendrá al apagar la pantalla</strong></p>
+                </div>
+                
+                <h3>Paso 4: Configurar Permisos</h3>
+                <p><code>Configuración → Apps → Boston Tracker → Permisos → Ubicación → "Permitir siempre"</code></p>
             </div>
             
             <div class="section">
                 <h2>📞 Contacto y Soporte</h2>
                 <p>Para soporte técnico o consultas sobre privacidad:</p>
                 <ul>
-                    <li><strong>Email:</strong> soporte@bostontracker.com</li>
-                    <li><strong>Repositorio:</strong> <a href="https://github.com/tu-usuario/boston-tracker" target="_blank">GitHub</a></li>
-                    <li><strong>Issues:</strong> Reporte problemas en GitHub Issues</li>
+                    <li><strong>📧 Email:</strong> soporte@bostontracker.com</li>
+                    <li><strong>🌐 Dashboard:</strong> <a href="/" target="_blank">http://185.144.157.163/</a></li>
+                    <li><strong>💻 Repositorio:</strong> <a href="https://github.com/Scribax/BostonTracker" target="_blank">GitHub</a></li>
+                    <li><strong>🐛 Issues:</strong> Reporte problemas en GitHub Issues</li>
                 </ul>
+                
+                <h3>🆘 Problemas de Tracking en Background?</h3>
+                <p>Si el GPS se detiene al guardar el celular:</p>
+                <ol>
+                    <li>Verificar optimización de batería (paso crítico arriba)</li>
+                    <li>Confirmar permisos de ubicación "Permitir siempre"</li>
+                    <li>Activar inicio automático de la app</li>
+                    <li>Contactar soporte si persiste el problema</li>
+                </ol>
             </div>
             
             <div style="text-align: center;">
@@ -216,8 +400,48 @@
         
         <div class="footer">
             <p>&copy; 2024 Boston Tracker. Todos los derechos reservados.</p>
-            <p>Última actualización: $(date '+%d/%m/%Y')</p>
+            <p>Última actualización: <span id="last-update"></span></p>
+            <p>APK disponible: <a href="/apk/boston-tracker-latest.apk">boston-tracker-latest.apk</a></p>
         </div>
     </div>
+
+    <script>
+        // Actualizar fecha automáticamente
+        document.getElementById('last-update').textContent = new Date().toLocaleDateString('es-ES', {
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+
+        // Función para obtener información dinámica de la app (opcional)
+        async function updateAppInfo() {
+            try {
+                // Podrías hacer fetch a una API para obtener versión dinámica
+                // const response = await fetch('/api/app/version');
+                // const data = await response.json();
+                // document.getElementById('app-version').textContent = data.version;
+                
+                console.log('📱 Página de contratos cargada - v1.0.1');
+            } catch (error) {
+                console.log('ℹ️ No se pudo obtener información dinámica de la app');
+            }
+        }
+
+        // Ejecutar al cargar la página
+        updateAppInfo();
+
+        // Event listener para el botón de descarga
+        document.getElementById('download-btn').addEventListener('click', function(e) {
+            // Analytics o tracking de descarga si es necesario
+            console.log('📥 APK descargado desde página de contratos');
+            
+            // Mostrar mensaje de confirmación
+            setTimeout(() => {
+                alert('📱 Descarga iniciada!\n\n🔔 Recuerda:\n1. Instalar el APK\n2. Configurar "No optimizar" en batería\n3. Permisos de ubicación "Permitir siempre"');
+            }, 1000);
+        });
+    </script>
 </body>
 </html>

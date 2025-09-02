@@ -2,7 +2,9 @@ import React, { createContext, useContext, useState, useEffect, useRef } from 'r
 import { Alert } from 'react-native';
 import locationService from '../services/locationService';
 import socketService from '../services/socketService';
+import apiService from '../services/apiService';
 import { useAuth } from './AuthContext';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Context
 const LocationContext = createContext();
@@ -35,7 +37,7 @@ export const LocationProvider = ({ children }) => {
       if (trackingIntervalRef.current) {
         clearInterval(trackingIntervalRef.current);
       }
-      locationService.stopLocationTracking();
+      locationService.stopTracking();
     };
   }, []);
 
@@ -56,7 +58,7 @@ export const LocationProvider = ({ children }) => {
         }
         
         // Detener servicio de ubicación
-        locationService.stopLocationTracking().catch(error => {
+        locationService.stopTracking().catch(error => {
           console.warn('Error deteniendo location service:', error);
         });
       }
@@ -95,8 +97,8 @@ export const LocationProvider = ({ children }) => {
   const startTracking = async (onTripStart) => {
     try {
       // Verificar permisos primero
-      const hasPermissions = await initializeLocation();
-      if (!hasPermissions) {
+      const permissionResult = await locationService.requestPermissions();
+      if (!permissionResult.success) {
         Alert.alert(
           'Permisos Requeridos',
           'Necesitamos acceso a tu ubicación para funcionar correctamente. Por favor habilítalo en configuración.',
@@ -109,20 +111,23 @@ export const LocationProvider = ({ children }) => {
       }
 
       // Obtener ubicación inicial
-      const initialLocation = await locationService.getCurrentPosition();
-      if (!initialLocation.success) {
-        throw new Error(initialLocation.error || 'No se pudo obtener ubicación inicial');
-      }
+      const initialLocation = await locationService.getCurrentLocation();
+      
+      console.log('📍 Ubicación inicial obtenida:', {
+        lat: initialLocation.coords.latitude.toFixed(6),
+        lng: initialLocation.coords.longitude.toFixed(6),
+        accuracy: initialLocation.coords.accuracy
+      });
 
       // Iniciar viaje en el servidor
-      const tripResult = await onTripStart?.(initialLocation.data);
+      const tripResult = await onTripStart?.(initialLocation);
       if (!tripResult?.success) {
         throw new Error(tripResult?.error || 'Error iniciando viaje');
       }
 
       // Configurar estado
       setIsTracking(true);
-      setCurrentLocation(initialLocation.data);
+      setCurrentLocation(initialLocation);
       setMileage(0);
       setTripId(tripResult.data?.tripId);
       setError('');
@@ -137,7 +142,20 @@ export const LocationProvider = ({ children }) => {
       }
 
       // Iniciar tracking en background con el userId
-      const trackingResult = await locationService.startLocationTracking(user.id);
+      // Configurar token para background tracking
+      // Configurar token para background tracking
+      // Configurar token para background tracking
+      const storedToken = await AsyncStorage.getItem("bostonToken");
+      if (storedToken) {
+        locationService.setAuthToken(storedToken);
+      }
+      // Configurar token para background tracking
+      const currentToken = await AsyncStorage.getItem("bostonToken");
+      if (currentToken) {
+        locationService.setAuthToken(currentToken);
+        console.log("🔑 Token configurado para background tracking");
+      }
+      const trackingResult = await locationService.startHighFrequencyTracking(user.id);
       if (!trackingResult.success) {
         throw new Error(trackingResult.error || 'Error iniciando tracking de ubicación');
       }
@@ -181,7 +199,7 @@ export const LocationProvider = ({ children }) => {
       }
 
       // Detener tracking en background
-      await locationService.stopLocationTracking();
+      await locationService.stopTracking();
 
       // Detener viaje en el servidor si existe
       if (onTripStop && tripId) {
@@ -220,23 +238,46 @@ export const LocationProvider = ({ children }) => {
     try {
       if (!isTrackingRef.current) return;
 
-      const location = await locationService.getCurrentPosition();
-      if (!location.success) {
-        console.warn('No se pudo obtener ubicación actual:', location.error);
-        return;
-      }
-
+      const location = await locationService.getCurrentLocation();
+      
       // Actualizar estado local
-      setCurrentLocation(location.data);
+      setCurrentLocation(location);
+
+      // Enviar ubicación al backend
+      try {
+        if (user && user.id) {
+          await apiService.updateLocation(user.id, {
+            latitude: location.coords.latitude,
+            longitude: location.coords.longitude,
+            accuracy: location.coords.accuracy || null
+          });
+          console.log("📤 Ubicación enviada al backend correctamente");
+        }
+      } catch (apiError) {
+        console.error("❌ Error enviando ubicación al backend:", apiError);
+      }
       setLastUpdateTime(new Date());
 
       // Calcular distancia desde la última ubicación conocida
       if (currentLocation) {
-        const distance = locationService.calculateDistance(
-          currentLocation.latitude,
-          currentLocation.longitude,
-          location.data.latitude,
-          location.data.longitude
+        // Función simple para calcular distancia
+        const calculateDistance = (lat1, lon1, lat2, lon2) => {
+          const R = 6371; // Radio de la Tierra en km
+          const dLat = (lat2 - lat1) * Math.PI / 180;
+          const dLon = (lon2 - lon1) * Math.PI / 180;
+          const a = 
+            Math.sin(dLat/2) * Math.sin(dLat/2) +
+            Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
+            Math.sin(dLon/2) * Math.sin(dLon/2);
+          const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+          return R * c;
+        };
+
+        const distance = calculateDistance(
+          currentLocation.coords.latitude,
+          currentLocation.coords.longitude,
+          location.coords.latitude,
+          location.coords.longitude
         );
         
         if (distance > 0.005) { // Solo actualizar si se movió más de 5 metros
@@ -245,9 +286,9 @@ export const LocationProvider = ({ children }) => {
       }
 
       console.log('📍 Ubicación actualizada:', {
-        lat: location.data.latitude.toFixed(6),
-        lng: location.data.longitude.toFixed(6),
-        accuracy: location.data.accuracy
+        lat: location.coords.latitude.toFixed(6),
+        lng: location.coords.longitude.toFixed(6),
+        accuracy: location.coords.accuracy
       });
 
     } catch (error) {
