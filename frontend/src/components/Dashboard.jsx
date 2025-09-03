@@ -56,7 +56,7 @@ const Dashboard = () => {
         const errorMsg = result?.error || 'Error cargando deliveries';
         console.error('❌ Error cargando deliveries:', errorMsg);
         setError(errorMsg);
-        toast.error(errorMsg);
+        // toast.error(errorMsg); // Comentado para evitar spam de notificaciones
         // No limpiar deliveries existentes en caso de error
       }
     } catch (err) {
@@ -64,7 +64,7 @@ const Dashboard = () => {
       console.error('Stack trace:', err.stack);
       const errorMsg = 'Error de conexión con el servidor';
       setError(errorMsg);
-      toast.error(errorMsg);
+      // toast.error(errorMsg); // Comentado para evitar spam de notificaciones
       // No limpiar deliveries existentes en caso de error
     } finally {
       setLoading(false);
@@ -183,7 +183,7 @@ const Dashboard = () => {
     loadDeliveries();
     
     // Recargar cada 30 segundos como backup
-    const interval = setInterval(loadDeliveries, 30000);
+    const interval = setInterval(loadDeliveries, 120000);
     return () => clearInterval(interval);
   }, [loadDeliveries]);
 
