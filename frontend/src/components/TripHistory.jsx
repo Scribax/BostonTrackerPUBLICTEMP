@@ -50,11 +50,11 @@ const TripHistory = () => {
       });
       
       if (result && result.success) {
-        setTrips(result.data || []);
+        setTrips(result.data.trips || []);
         setPagination(prev => ({
           ...prev,
-          total: result.pagination?.total || 0,
-          totalPages: result.pagination?.totalPages || 0
+          total: result.data.pagination?.totalItems || 0,
+          totalPages: result.data.pagination?.totalItemsPages || 0
         }));
       } else {
         toast.error('Error cargando historial de viajes');
@@ -73,9 +73,42 @@ const TripHistory = () => {
 
   // Filtrar viajes por término de búsqueda
   const filteredTrips = trips.filter(trip => 
-    trip.deliveryName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    trip.employeeId.toLowerCase().includes(searchTerm.toLowerCase())
+    trip.deliveryUser?.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    trip.deliveryUser?.employeeId.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  // Agrupar viajes filtrados por día
+  const groupTripsByDay = (trips) => {
+    const groups = {};
+    
+    trips.forEach(trip => {
+      const tripDate = new Date(trip.endTime || trip.createdAt);
+      const dateKey = format(tripDate, "yyyy-MM-dd");
+      const dateLabel = format(tripDate, "EEEE, d 'de' MMMM 'de' yyyy", { locale: es });
+      
+      if (!groups[dateKey]) {
+        groups[dateKey] = {
+          date: dateLabel,
+          trips: [],
+          totalKm: 0,
+          totalTime: 0,
+          tripCount: 0
+        };
+      }
+      
+      groups[dateKey].trips.push(trip);
+      groups[dateKey].totalKm += trip.totalKm || 0;
+      groups[dateKey].totalTime += trip.totalTime || 0;
+      groups[dateKey].tripCount += 1;
+    });
+    
+    // Convertir a array y ordenar por fecha (más reciente primero)
+    return Object.keys(groups)
+      .sort((a, b) => new Date(b) - new Date(a))
+      .map(key => groups[key]);
+  };
+
+  const groupedTrips = groupTripsByDay(filteredTrips);
 
   // Manejar eliminación de viaje
   const handleDeleteTrip = async () => {
@@ -85,7 +118,7 @@ const TripHistory = () => {
       const result = await tripService.deleteTrip(tripToDelete.id);
       
       if (result && result.success) {
-        toast.success(`Viaje de ${tripToDelete.deliveryName} eliminado`);
+        toast.success(`Viaje de ${tripToDelete.deliveryUser?.name} eliminado`);
         setTrips(prev => prev.filter(trip => trip.id !== tripToDelete.id));
         setShowDeleteModal(false);
         setTripToDelete(null);
@@ -198,7 +231,7 @@ const TripHistory = () => {
           <Card className="text-center">
             <Card.Body>
               <h4 className="text-success">
-                {filteredTrips.reduce((acc, trip) => acc + (trip.mileage || 0), 0).toFixed(1)} km
+                {filteredTrips.reduce((acc, trip) => acc + (trip.totalKm || 0), 0).toFixed(1)} km
               </h4>
               <small className="text-muted">Kilómetros Totales</small>
             </Card.Body>
@@ -208,9 +241,9 @@ const TripHistory = () => {
           <Card className="text-center">
             <Card.Body>
               <h4 className="text-info">
-                {Math.round(filteredTrips.reduce((acc, trip) => acc + (trip.duration || 0), 0) / 60)} h
+                {Math.round(filteredTrips.reduce((acc, trip) => acc + (trip.totalTime || 0), 0))} min
               </h4>
-              <small className="text-muted">Horas Totales</small>
+              <small className="text-muted">Minutos Totales</small>
             </Card.Body>
           </Card>
         </Col>
@@ -219,7 +252,7 @@ const TripHistory = () => {
             <Card.Body>
               <h4 className="text-warning">
                 {filteredTrips.length > 0 ? 
-                  (filteredTrips.reduce((acc, trip) => acc + (trip.averageSpeed || 0), 0) / filteredTrips.length).toFixed(1) 
+                  (filteredTrips.reduce((acc, trip) => acc + (trip.avgSpeed || 0), 0) / filteredTrips.length).toFixed(1) 
                   : 0} km/h
               </h4>
               <small className="text-muted">Velocidad Promedio</small>
@@ -237,134 +270,148 @@ const TripHistory = () => {
           </h5>
         </Card.Header>
         <Card.Body className="p-0">
-          {filteredTrips.length === 0 ? (
+          {groupedTrips.length === 0 ? (
             <Alert variant="info" className="m-3">
               <i className="bi bi-info-circle me-2"></i>
               {searchTerm ? 'No se encontraron viajes que coincidan con la búsqueda.' : 'No hay viajes completados registrados.'}
             </Alert>
           ) : (
-            <Table responsive hover className="mb-0">
-              <thead className="table-dark">
-                <tr>
-                  <th 
-                    className="cursor-pointer" 
-                    onClick={() => handleSort('deliveryName')}
-                  >
-                    Delivery {getSortIcon('deliveryName')}
-                  </th>
-                  <th 
-                    className="cursor-pointer"
-                    onClick={() => handleSort('employeeId')}
-                  >
-                    ID {getSortIcon('employeeId')}
-                  </th>
-                  <th 
-                    className="cursor-pointer"
-                    onClick={() => handleSort('endTime')}
-                  >
-                    Fecha {getSortIcon('endTime')}
-                  </th>
-                  <th 
-                    className="cursor-pointer"
-                    onClick={() => handleSort('duration')}
-                  >
-                    Duración {getSortIcon('duration')}
-                  </th>
-                  <th 
-                    className="cursor-pointer"
-                    onClick={() => handleSort('mileage')}
-                  >
-                    Kilómetros {getSortIcon('mileage')}
-                  </th>
-                  <th 
-                    className="cursor-pointer"
-                    onClick={() => handleSort('averageSpeed')}
-                  >
-                    Vel. Promedio {getSortIcon('averageSpeed')}
-                  </th>
-                  <th>Ubicaciones</th>
-                  <th>Acciones</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredTrips.map((trip) => (
-                  <tr key={trip.id}>
-                    <td>
-                      <strong>{trip.deliveryName}</strong>
-                    </td>
-                    <td>
-                      <Badge bg="secondary">{trip.employeeId}</Badge>
-                    </td>
-                    <td>
-                      <div>
-                        <small className="text-muted">
-                          {format(new Date(trip.endTime), 'dd/MM/yyyy', { locale: es })}
-                        </small>
-                        <br />
-                        <small>
-                          {format(new Date(trip.endTime), 'HH:mm', { locale: es })}
-                        </small>
+            <>
+              {groupedTrips.map((dayGroup, dayIndex) => (
+                <div key={dayIndex} className="mb-4">
+                  {/* Encabezado del día */}
+                  <div className="bg-light p-3 border-bottom">
+                    <div className="row align-items-center">
+                      <div className="col-md-6">
+                        <h6 className="mb-0 text-primary">
+                          <i className="bi bi-calendar3 me-2"></i>
+                          {dayGroup.date}
+                        </h6>
                       </div>
-                    </td>
-                    <td>
-                      <Badge bg="info">
-                        {formatDuration(trip.duration)}
-                      </Badge>
-                    </td>
-                    <td>
-                      <strong className="text-success">
-                        {trip.mileage ? trip.mileage.toFixed(2) : '0.00'} km
-                      </strong>
-                    </td>
-                    <td>
-                      <span className="text-primary">
-                        {formatSpeed(trip.averageSpeed)}
-                      </span>
-                    </td>
-                    <td>
-                      <Badge bg="light" text="dark">
-                        {trip.totalLocations || 0} puntos
-                      </Badge>
-                    </td>
-                    <td>
-                      <div className="d-flex gap-1">
-                        <OverlayTrigger
-                          placement="top"
-                          overlay={<Tooltip>Ver detalles del viaje</Tooltip>}
-                        >
-                          <Button
-                            variant="outline-primary"
-                            size="sm"
-                            onClick={() => {
-                              setSelectedTrip(trip);
-                              setShowDetailModal(true);
-                            }}
-                          >
-                            <i className="bi bi-eye"></i>
-                          </Button>
-                        </OverlayTrigger>
-                        
-                        <OverlayTrigger
-                          placement="top"
-                          overlay={<Tooltip>Eliminar viaje del historial</Tooltip>}
-                        >
-                          <Button
-                            variant="outline-danger"
-                            size="sm"
-                            onClick={() => {
-                              setTripToDelete(trip);
-                              setShowDeleteModal(true);
-                            }}
-                          >
-                            <i className="bi bi-trash"></i>
-                          </Button>
-                        </OverlayTrigger>
+                      <div className="col-md-6">
+                        <div className="row text-center">
+                          <div className="col-4">
+                            <small className="text-muted">Viajes</small>
+                            <div className="fw-bold text-primary">{dayGroup.tripCount}</div>
+                          </div>
+                          <div className="col-4">
+                            <small className="text-muted">Kilómetros</small>
+                            <div className="fw-bold text-success">{dayGroup.totalKm.toFixed(1)} km</div>
+                          </div>
+                          <div className="col-4">
+                            <small className="text-muted">Tiempo</small>
+                            <div className="fw-bold text-info">{dayGroup.totalTime} min</div>
+                          </div>
+                        </div>
                       </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </Table>
+                    </div>
+                  </div>
+                  
+                  {/* Tabla de viajes del día */}
+                  <Table striped hover responsive className="mb-0">
+                    <thead className="table-light">
+                      <tr>
+                        <th>Delivery</th>
+                        <th>Código</th>
+                        <th>
+                          <div className="d-flex align-items-center">
+                            Hora Inicio
+                            <Button 
+                              variant="link" 
+                              size="sm" 
+                              className="p-0 ms-1"
+                              onClick={() => handleSort('startTime')}
+                            >
+                              {getSortIcon('startTime')}
+                            </Button>
+                          </div>
+                        </th>
+                        <th>
+                          <div className="d-flex align-items-center">
+                            Hora Fin
+                            <Button 
+                              variant="link" 
+                              size="sm" 
+                              className="p-0 ms-1"
+                              onClick={() => handleSort('endTime')}
+                            >
+                              {getSortIcon('endTime')}
+                            </Button>
+                          </div>
+                        </th>
+                        <th>Duración</th>
+                        <th>Distancia</th>
+                        <th>Velocidad</th>
+                        <th>Acciones</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {dayGroup.trips.map((trip) => (
+                        <tr key={trip.id}>
+                          <td>
+                            <strong>{trip.deliveryUser?.name || 'N/A'}</strong>
+                          </td>
+                          <td>
+                            <span className="badge bg-secondary">
+                              {trip.deliveryUser?.employeeId || 'N/A'}
+                            </span>
+                          </td>
+                          <td>
+                            <small className="text-muted">
+                              {trip.startTime ? format(new Date(trip.startTime), 'HH:mm:ss') : 'N/A'}
+                            </small>
+                          </td>
+                          <td>
+                            <small className="text-muted">
+                              {trip.endTime ? format(new Date(trip.endTime), 'HH:mm:ss') : 'N/A'}
+                            </small>
+                          </td>
+                          <td>
+                            <span className="badge bg-info">
+                              {trip.totalTime || 0} min
+                            </span>
+                          </td>
+                          <td>
+                            <span className="badge bg-success">
+                              {trip.totalKm ? trip.totalKm.toFixed(2) : '0.00'} km
+                            </span>
+                          </td>
+                          <td>
+                            <span className="badge bg-warning text-dark">
+                              {trip.avgSpeed ? trip.avgSpeed.toFixed(1) : '0.0'} km/h
+                            </span>
+                          </td>
+                          <td>
+                            <div className="d-flex gap-1">
+                              <Button
+                                variant="outline-primary"
+                                size="sm"
+                                onClick={() => {
+                                  setSelectedTrip(trip);
+                                  setShowDetailModal(true);
+                                }}
+                              >
+                                <i className="bi bi-eye"></i>
+                              </Button>
+                              <Button
+                                variant="outline-danger"
+                                size="sm"
+                                onClick={() => {
+                                  setTripToDelete(trip);
+                                  setShowDeleteModal(true);
+                                }}
+                              >
+                                <i className="bi bi-trash"></i>
+                              </Button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </Table>
+                </div>
+              ))}
+            </>
           )}
         </Card.Body>
         
@@ -585,7 +632,7 @@ const TripHistory = () => {
             <div>
               <p>¿Estás seguro que deseas eliminar este viaje del historial?</p>
               <Alert variant="warning">
-                <strong>Delivery:</strong> {tripToDelete.deliveryName} ({tripToDelete.employeeId})<br />
+                <strong>Delivery:</strong> {tripToDelete.deliveryUser?.name} ({tripToDelete.employeeId})<br />
                 <strong>Fecha:</strong> {format(new Date(tripToDelete.endTime), 'dd/MM/yyyy HH:mm', { locale: es })}<br />
                 <strong>Distancia:</strong> {tripToDelete.mileage?.toFixed(2) || '0.00'} km<br />
                 <strong>Duración:</strong> {formatDuration(tripToDelete.duration)}

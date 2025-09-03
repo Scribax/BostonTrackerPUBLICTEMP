@@ -1,5 +1,6 @@
 import axios from 'axios';
 import toast from 'react-hot-toast';
+import Logger from '../config/logger.js';
 
 // Configuración dinámica que se adapta a cualquier IP
 const getApiUrl = () => {
@@ -25,24 +26,24 @@ const api = axios.create({
 // Interceptor para requests
 api.interceptors.request.use(
   (config) => {
-    console.log(`🚀 API Request: ${config.method?.toUpperCase()} ${config.url}`);
+    Logger.apiRequest(config.method?.toUpperCase(), config.url);
     
     const token = localStorage.getItem('bostonToken');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
-      console.log('🔑 Token añadido al request');
+      Logger.debug('🔑 Token añadido al request');
     } else {
-      console.warn('⚠️ No hay token disponible');
+      Logger.warn('⚠️ No hay token disponible');
     }
     
     if (config.data) {
-      console.log('📎 Request data:', config.data);
+      Logger.debug('📎 Request data:', config.data);
     }
     
     return config;
   },
   (error) => {
-    console.error('💥 Error en request interceptor:', error);
+    Logger.error('💥 Request Error:', error);
     return Promise.reject(error);
   }
 );
@@ -50,21 +51,20 @@ api.interceptors.request.use(
 // Interceptor para responses
 api.interceptors.response.use(
   (response) => {
-    console.log(`✅ API Response: ${response.status} ${response.config.method?.toUpperCase()} ${response.config.url}`);
-    if (response.data) {
-      console.log('📦 Response data:', response.data);
-    }
+    Logger.apiResponse(
+      response.config.method?.toUpperCase(), 
+      response.config.url, 
+      response.data
+    );
+    
     return response;
   },
   (error) => {
-    console.error('💥 API Error:', error);
-    console.error('🔄 Error config:', error.config);
-    console.error('📋 Error response:', error.response?.data);
-    console.error('🔢 Status code:', error.response?.status);
+    Logger.apiError(error);
     
     // Manejar errores de autenticación
     if (error.response?.status === 401) {
-      console.warn('🔒 Error de autenticación, redirigiendo al login');
+      Logger.warn('🔒 Error de autenticación, redirigiendo al login');
       localStorage.removeItem('bostonToken');
       window.location.href = '/login';
       toast.error('Sesión expirada. Por favor inicia sesión nuevamente.');
@@ -72,19 +72,19 @@ api.interceptors.response.use(
     
     // Manejar errores de servidor
     else if (error.response?.status >= 500) {
-      console.error('😱 Error del servidor:', error.response.status);
+      Logger.error('😱 Error del servidor:', error.response.status);
       toast.error('Error del servidor. Por favor intenta más tarde.');
     }
     
     // Manejar errores de red
     else if (error.code === 'NETWORK_ERROR' || error.message === 'Network Error') {
-      console.error('🌐 Error de red:', error.message);
+      Logger.error('🌐 Error de red:', error.message);
       toast.error('Error de conexión. Verifica tu internet.');
     }
     
     // Manejar timeout
     else if (error.code === 'ECONNABORTED') {
-      console.error('⏱️ Timeout en la petición');
+      Logger.error('⏱️ Timeout en la petición');
       toast.error('La petición ha tardado demasiado. Intenta de nuevo.');
     }
     

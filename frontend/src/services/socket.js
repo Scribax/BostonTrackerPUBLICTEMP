@@ -1,3 +1,4 @@
+import Logger from "../config/logger.js";
 import { io } from 'socket.io-client';
 
 class SocketService {
@@ -22,7 +23,7 @@ class SocketService {
 
     // Eventos de conexión
     this.socket.on('connect', () => {
-      console.log('🔌 Conectado a Socket.io');
+      Logger.socketEvent('🔌 Conectado a Socket.io');
       this.isConnected = true;
       
       // Unirse al room de admins
@@ -30,7 +31,7 @@ class SocketService {
     });
 
     this.socket.on('disconnect', (reason) => {
-      console.log('🔌 Desconectado de Socket.io:', reason);
+      Logger.socketEvent('🔌 Desconectado de Socket.io:', reason);
       this.isConnected = false;
     });
 
@@ -41,13 +42,13 @@ class SocketService {
 
     // Eventos de reconexión
     this.socket.on('reconnect', (attemptNumber) => {
-      console.log(`🔄 Reconectado a Socket.io (intento ${attemptNumber})`);
+      Logger.socketEvent(`🔄 Reconectado a Socket.io (intento ${attemptNumber})`);
       this.isConnected = true;
       this.socket.emit('join-admin');
     });
 
     this.socket.on('reconnect_attempt', (attemptNumber) => {
-      console.log(`🔄 Intentando reconectar... (${attemptNumber})`);
+      Logger.socketEvent(`🔄 Intentando reconectar... (${attemptNumber})`);
     });
 
     this.socket.on('reconnect_failed', () => {

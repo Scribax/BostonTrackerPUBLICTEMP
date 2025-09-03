@@ -149,7 +149,7 @@ const Trip = sequelize.define('Trip', {
     type: DataTypes.UUID,
     allowNull: false,
     references: {
-      model: User,
+      model: User, as: "delivery",
       key: 'id'
     }
   },
@@ -277,7 +277,7 @@ function calculateTotalDistance(locations) {
 }
 
 // Filtrar ubicaciones para remover ruido de GPS
-function filterGPSNoise(locations, minDistanceMeters = 5) {
+function filterGPSNoise(locations, minDistanceMeters = 15) {
   if (!locations || locations.length < 2) return locations;
   
   const filtered = [locations[0]]; // Siempre incluir la primera ubicación
@@ -293,13 +293,40 @@ function filterGPSNoise(locations, minDistanceMeters = 5) {
       current.longitude
     );
     
+    // Calcular tiempo entre puntos para validar velocidad
+    const timeDiff = (new Date(current.timestamp) - new Date(lastFiltered.timestamp)) / 1000;
+    
     // Solo incluir si se movió más de la distancia mínima (en km)
     if (distance > minDistanceMeters / 1000) {
-      filtered.push(current);
+      if (timeDiff > 0) {
+        const speedKmh = (distance / timeDiff) * 3600;
+        // Filtrar velocidades irreales (más de 60 km/h para delivery)
+        if (speedKmh <= 60) {
+          filtered.push(current);
+        } else {
+          console.log(`⚠️ GPS: Velocidad filtrada ${speedKmh.toFixed(1)} km/h`);
+        }
+      } else {
+        filtered.push(current);
+      }
     }
   }
   
   return filtered;
+}
+// Calcular velocidad promedio más precisa
+function calculateRealisticAverageSpeed(filteredLocations, durationMinutes) {
+  if (!filteredLocations || filteredLocations.length < 2 || durationMinutes <= 0) return 0;
+  
+  const totalDistance = calculateTotalDistance(filteredLocations);
+  
+  // Solo calcular velocidad si hay distancia significativa (más de 50 metros)
+  if (totalDistance < 0.05) return 0; // 0.05 km = 50 metros
+  
+  const speedKmh = (totalDistance / durationMinutes) * 60;
+  
+  // Limitar velocidad máxima razonable para delivery (45 km/h)
+  return Math.min(Math.round(speedKmh * 100) / 100, 45);
 }
 
 // Generar JWT Token
@@ -441,7 +468,7 @@ app.get('/api/deliveries', protect, async (req, res) => {
       where: { status: 'active' },
       include: [
         {
-          model: User,
+          model: User, as: "delivery",
           as: 'delivery',
           attributes: ['name', 'employeeId']
         },
@@ -500,7 +527,7 @@ app.post('/api/deliveries/:id/start', protect, async (req, res) => {
     if (!delivery) {
       return res.status(404).json({
         success: false,
-        message: 'Delivery no encontrado'
+        message: 'Trip no encontrado'
       });
     }
 
@@ -584,7 +611,7 @@ app.post('/api/deliveries/:id/location', locationLimiter, protect, async (req, r
   try {
     const trip = await Trip.findOne({
       where: { deliveryId, status: 'active' },
-      include: [{ model: User, as: 'delivery' }]
+      include: [{ model: User, as: "delivery", as: 'delivery' }]
     });
 
     if (!trip) {
@@ -617,8 +644,7 @@ app.post('/api/deliveries/:id/location', locationLimiter, protect, async (req, r
     
     const newMileage = calculateTotalDistance(filteredLocations);
     const duration = Math.floor((new Date() - new Date(trip.startTime)) / 1000 / 60);
-    const averageSpeed = duration > 0 && newMileage > 0 ? 
-      Math.round((newMileage / duration) * 60 * 100) / 100 : 0;
+    const averageSpeed = calculateRealisticAverageSpeed(filteredLocations, duration);
 
     // Actualizar trip con cálculos precisos
     await trip.update({
@@ -682,7 +708,7 @@ app.post('/api/deliveries/:id/metrics', protect, async (req, res) => {
   try {
     const trip = await Trip.findOne({
       where: { deliveryId, status: 'active' },
-      include: [{ model: User, as: 'delivery' }]
+      include: [{ model: User, as: "delivery", as: 'delivery' }]
     });
 
     if (!trip) {
@@ -771,7 +797,7 @@ app.post('/api/deliveries/:id/stop', protect, async (req, res) => {
   try {
     const trip = await Trip.findOne({
       where: { deliveryId, status: 'active' },
-      include: [{ model: User, as: 'delivery' }]
+      include: [{ model: User, as: "delivery", as: 'delivery' }]
     });
 
     if (!trip) {
@@ -846,6 +872,53 @@ app.get('/api/deliveries/my-trip', protect, async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Error obteniendo viaje activo'
+    });
+  }
+});
+
+// Historial de ubicaciones de un delivery específico
+app.get('/api/deliveries/:id/history', protect, async (req, res) => {
+  try {
+    const { id: deliveryId } = req.params;
+    const { tripId, limit = 100 } = req.query;
+    
+    // Verificar que el usuario es admin
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Acceso denegado. Se requieren permisos de administrador.'
+      });
+    }
+    
+    // Construir condiciones de búsqueda
+    const whereConditions = { tripId: tripId };
+    
+    // Obtener ubicaciones del viaje específico
+    const locations = await Location.findAll({
+      where: whereConditions,
+      order: [['createdAt', 'ASC']],
+      limit: parseInt(limit),
+      attributes: ['latitude', 'longitude', 'timestamp', 'createdAt']
+    });
+    
+    res.json({
+      success: true,
+      data: {
+        deliveryId,
+        tripId,
+        locations: locations.map(loc => ({
+          latitude: loc.latitude,
+          longitude: loc.longitude,
+          timestamp: loc.timestamp || loc.createdAt
+        }))
+      }
+    });
+    
+  } catch (error) {
+    console.error('Error obteniendo historial de ubicaciones:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error obteniendo historial de ubicaciones'
     });
   }
 });
@@ -1205,99 +1278,46 @@ app.delete('/api/auth/users/:id', protect, async (req, res) => {
   }
 });
 
+// Socket.io
+io.on('connection', (socket) => {
+  console.log('🔌 Cliente conectado:', socket.id);
 
-// ================== RUTAS DE HISTORIAL DE VIAJES ==================
+  // Admin se une a la sala de admins
+  socket.on('join-admin', () => {
+    socket.join('admins');
+    console.log('👔 Admin se unió al room');
+  });
 
-// Obtener historial de viajes completados (solo admin)
-app.get("/api/trips/history", protect, async (req, res) => {
-  try {
-    // Verificar que el usuario es admin
-    if (req.user.role !== "admin") {
-      return res.status(403).json({
-        success: false,
-        message: "Acceso denegado. Se requieren permisos de administrador."
-      });
+  // Trip se une a su sala específica
+  socket.on('join-delivery', (deliveryId) => {
+    if (deliveryId) {
+      socket.join(`delivery-${deliveryId}`);
+      console.log(`🚚 Trip ${deliveryId} se unió a su room específico`);
     }
+  });
 
-    const { page = 1, limit = 20, sortBy = "endTime", sortOrder = "DESC" } = req.query;
-    const offset = (page - 1) * limit;
-
-    // Obtener viajes completados con información del delivery
-    const { count, rows: trips } = await Trip.findAndCountAll({
-      where: { status: "completed" },
-      include: [
-        {
-          model: User,
-          as: "delivery",
-          attributes: ["name", "employeeId"]
-        },
-        {
-          model: Location,
-          as: "locations",
-          attributes: ["latitude", "longitude", "timestamp"],
-          order: [["timestamp", "ASC"]]
-        }
-      ],
-      order: [[sortBy, sortOrder]],
-      limit: parseInt(limit),
-      offset: parseInt(offset)
-    });
-
-    // Formatear datos para el frontend
-    const formattedTrips = trips.map(trip => {
-      const locations = trip.locations || [];
-      const startLocation = locations.length > 0 ? locations[0] : null;
-      const endLocation = locations.length > 0 ? locations[locations.length - 1] : null;
-      
-      return {
-        id: trip.id,
-        deliveryId: trip.deliveryId,
-        deliveryName: trip.delivery.name,
-        employeeId: trip.delivery.employeeId,
-        startTime: trip.startTime,
-        endTime: trip.endTime,
-        duration: trip.duration, // en minutos
-        mileage: Math.round(trip.mileage * 1000) / 1000, // km con 3 decimales
-        averageSpeed: trip.averageSpeed,
-        totalLocations: locations.length,
-        startLocation: startLocation ? {
-          latitude: startLocation.latitude,
-          longitude: startLocation.longitude,
-          timestamp: startLocation.timestamp
-        } : null,
-        endLocation: endLocation ? {
-          latitude: endLocation.latitude,
-          longitude: endLocation.longitude,
-          timestamp: endLocation.timestamp
-        } : null,
-        realTimeMetrics: trip.realTimeMetrics ? JSON.parse(trip.realTimeMetrics) : null,
-        createdAt: trip.createdAt,
-        updatedAt: trip.updatedAt
-      };
-    });
-    
-    res.json({
-      success: true,
-      data: formattedTrips,
-      pagination: {
-        total: count,
-        page: parseInt(page),
-        limit: parseInt(limit),
-        totalPages: Math.ceil(count / limit)
-      }
-    });
-    
-  } catch (error) {
-    console.error("Error obteniendo historial de viajes:", error);
-    res.status(500).json({
-      success: false,
-      message: "Error obteniendo historial de viajes"
-    });
-  }
+  // Manejar desconexión
+  socket.on('disconnect', () => {
+    console.log('🔌 Cliente desconectado:', socket.id);
+  });
 });
 
-// Obtener detalles de un viaje específico (solo admin)
-app.get("/api/trips/:id", protect, async (req, res) => {
+// Manejo de errores
+app.use((err, req, res, next) => {
+  console.error(err.stack);
+  res.status(500).json({ 
+    message: 'Error interno del servidor',
+    error: process.env.NODE_ENV === 'development' ? err.message : {}
+  });
+});
+
+// ============================================
+// ENDPOINTS PARA HISTORIAL DE VIAJES
+// ============================================
+
+// Obtener detalles de un viaje específico (debe ir antes de /history)
+// Endpoint para obtener detalles de un viaje específico
+app.get("/api/trips/details/:id", protect, async (req, res) => {
   try {
     // Verificar que el usuario es admin
     if (req.user.role !== "admin") {
@@ -1308,18 +1328,17 @@ app.get("/api/trips/:id", protect, async (req, res) => {
     }
 
     const tripId = req.params.id;
-    
+
+    // Buscar el viaje con todos sus detalles
     const trip = await Trip.findByPk(tripId, {
       include: [
         {
-          model: User,
-          as: "delivery",
-          attributes: ["name", "employeeId", "phone"]
+          model: User, as: "delivery",
+          attributes: ["id", "name", "employeeId", "email"]
         },
         {
-          model: Location,
-          as: "locations",
-          order: [["timestamp", "ASC"]]
+          model: Location, as: "locations",
+          order: [['timestamp', 'ASC']]
         }
       ]
     });
@@ -1330,47 +1349,195 @@ app.get("/api/trips/:id", protect, async (req, res) => {
         message: "Viaje no encontrado"
       });
     }
-    
-    // Calcular estadísticas adicionales
-    const locations = trip.locations || [];
-    const routePoints = locations.map(loc => ({
-      latitude: loc.latitude,
-      longitude: loc.longitude,
-      timestamp: loc.timestamp
-    }));
-    
+
+    // Calcular métricas detalladas
+    const totalTime = trip.duration || 0; // ya está en minutos
+    const avgSpeed = trip.averageSpeed || 0; // ya está calculado
+    const totalKm = trip.mileage || 0;
+    const totalLocations = trip.locations ? trip.locations.length : 0;
+
+    // Formatear respuesta con todos los detalles
+    const tripDetails = {
+      id: trip.id,
+      deliveryId: trip.deliveryId,
+      
+      // Información del delivery
+      deliveryInfo: trip.delivery ? {
+        id: trip.delivery.id,
+        name: trip.delivery.name,
+        employeeId: trip.delivery.employeeId,
+        email: trip.delivery.email
+      } : {
+        id: trip.deliveryId,
+        name: "Usuario no encontrado",
+        employeeId: "",
+        email: ""
+      },
+      
+      // Información del cliente
+      customerName: trip.customerName,
+      customerAddress: trip.customerAddress,
+      customerPhone: trip.customerPhone,
+      
+      // Tiempos
+      startTime: trip.startTime,
+      endTime: trip.endTime,
+      
+      // Métricas
+      metrics: {
+        totalKm: Math.round(totalKm * 1000) / 1000, // 3 decimales
+        totalTime: Math.round(totalTime), // minutos
+        avgSpeed: Math.round(avgSpeed * 100) / 100, // km/h con 2 decimales
+        totalLocations: totalLocations
+      },
+      
+      // Estado
+      status: trip.status,
+      
+      // Timestamps
+      createdAt: trip.createdAt,
+      updatedAt: trip.updatedAt,
+      
+      // Ubicaciones (opcional, se puede usar el endpoint separado)
+      locations: trip.locations || []
+    };
+
     res.json({
       success: true,
-      data: {
-        id: trip.id,
-        deliveryId: trip.deliveryId,
-        deliveryName: trip.delivery.name,
-        employeeId: trip.delivery.employeeId,
-        deliveryPhone: trip.delivery.phone,
-        startTime: trip.startTime,
-        endTime: trip.endTime,
-        duration: trip.duration,
-        mileage: trip.mileage,
-        averageSpeed: trip.averageSpeed,
-        status: trip.status,
-        totalLocations: locations.length,
-        routePoints: routePoints,
-        realTimeMetrics: trip.realTimeMetrics ? JSON.parse(trip.realTimeMetrics) : null,
-        createdAt: trip.createdAt,
-        updatedAt: trip.updatedAt
-      }
+      data: tripDetails
     });
-    
+
   } catch (error) {
-    console.error("Error obteniendo detalles del viaje:", error);
+    console.error('Error obteniendo detalles del viaje:', error);
     res.status(500).json({
       success: false,
-      message: "Error obteniendo detalles del viaje"
+      message: "Error interno del servidor"
     });
   }
 });
 
-// Eliminar viaje del historial (solo admin)
+// Eliminar viaje específico usando la ruta de detalles
+app.delete("/api/trips/details/:id", protect, async (req, res) => {
+  try {
+    // Verificar que el usuario es admin
+    if (req.user.role !== "admin") {
+      return res.status(403).json({
+        success: false,
+        message: "Acceso denegado. Se requieren permisos de administrador."
+      });
+    }
+
+    const tripId = req.params.id;
+    const trip = await Trip.findByPk(tripId);
+
+    if (!trip) {
+      return res.status(404).json({
+        success: false,
+        message: "Viaje no encontrado"
+      });
+    }
+
+    // Solo permitir eliminar viajes completados
+    if (trip.status !== "completed") {
+      return res.status(400).json({
+        success: false,
+        message: "Solo se pueden eliminar viajes completados"
+      });
+    }
+
+    await trip.destroy();
+
+    res.json({
+      success: true,
+      message: "Viaje eliminado exitosamente"
+    });
+
+  } catch (error) {
+    console.error("Error eliminando viaje:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error eliminando viaje"
+    });
+  }
+});
+
+// Obtener historial de viajes completados
+app.get("/api/trips/history", protect, async (req, res) => {
+  try {
+    // Verificar que el usuario es admin
+    if (req.user.role !== "admin") {
+      return res.status(403).json({
+        success: false,
+        message: "Acceso denegado. Se requieren permisos de administrador."
+      });
+    }
+
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const offset = (page - 1) * limit;
+
+    const trips = await Trip.findAndCountAll({
+      where: {
+        status: "completed"
+      },
+      include: [
+        {
+          model: User, as: "delivery",
+          attributes: ["name", "employeeId"]
+        }
+      ],
+      order: [["updatedAt", "DESC"]],
+      limit: limit,
+      offset: offset
+    });
+
+    const tripsWithMetrics = trips.rows.map(trip => {
+      const totalTime = trip.duration || 0; // ya está en minutos
+      const avgSpeed = trip.averageSpeed || 0; // ya está calculado
+
+      return {
+        id: trip.id,
+        customerName: trip.customerName,
+        customerAddress: trip.customerAddress,
+        customerPhone: trip.customerPhone,
+        deliveryUser: trip.delivery ? {
+          name: trip.delivery.name,
+          employeeId: trip.delivery.employeeId
+        } : null,
+        startTime: trip.startTime,
+        endTime: trip.endTime,
+        totalKm: trip.mileage || 0,
+        totalTime: Math.round(totalTime), // minutos
+        avgSpeed: Math.round(avgSpeed * 100) / 100, // km/h con 2 decimales
+        status: trip.status,
+        createdAt: trip.createdAt,
+        updatedAt: trip.updatedAt
+      };
+    });
+
+    res.json({
+      success: true,
+      data: {
+        trips: tripsWithMetrics,
+        pagination: {
+          currentPage: page,
+          totalPages: Math.ceil(trips.count / limit),
+          totalItems: trips.count,
+          itemsPerPage: limit
+        }
+      }
+    });
+
+  } catch (error) {
+    console.error("Error obteniendo historial de viajes:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error obteniendo historial de viajes"
+    });
+  }
+});
+
+// Eliminar viaje del historial
 app.delete("/api/trips/:id", protect, async (req, res) => {
   try {
     // Verificar que el usuario es admin
@@ -1382,11 +1549,7 @@ app.delete("/api/trips/:id", protect, async (req, res) => {
     }
 
     const tripId = req.params.id;
-    
-    // Buscar el viaje
-    const trip = await Trip.findByPk(tripId, {
-      include: [{ model: User, as: "delivery", attributes: ["name", "employeeId"] }]
-    });
+    const trip = await Trip.findByPk(tripId);
 
     if (!trip) {
       return res.status(404).json({
@@ -1394,48 +1557,36 @@ app.delete("/api/trips/:id", protect, async (req, res) => {
         message: "Viaje no encontrado"
       });
     }
-    
-    // No permitir eliminar viajes activos
-    if (trip.status === "active") {
+
+    // Solo permitir eliminar viajes completados
+    if (trip.status !== "completed") {
       return res.status(400).json({
         success: false,
-        message: "No se puede eliminar un viaje activo. Debe completarse primero."
+        message: "Solo se pueden eliminar viajes completados"
       });
     }
-    
-    // Eliminar primero las ubicaciones asociadas
-    await Location.destroy({ where: { tripId: tripId } });
-    
-    // Luego eliminar el viaje
+
     await trip.destroy();
-    
+
     res.json({
       success: true,
-      message: `Viaje de ${trip.delivery.name} (${trip.delivery.employeeId}) eliminado exitosamente`,
-      deletedTrip: {
-        id: trip.id,
-        deliveryName: trip.delivery.name,
-        employeeId: trip.delivery.employeeId,
-        startTime: trip.startTime,
-        endTime: trip.endTime,
-        mileage: trip.mileage
-      }
+      message: "Viaje eliminado exitosamente"
     });
-    
+
   } catch (error) {
     console.error("Error eliminando viaje:", error);
     res.status(500).json({
       success: false,
-      message: "Error eliminando viaje del historial"
+      message: "Error eliminando viaje"
     });
   }
 });
 
+// ============================================
+// ENDPOINTS PARA GESTIÓN DE APK
+// ============================================
 
-
-// ================== RUTAS DE GESTIÓN APK Y WHATSAPP ==================
-
-// Generar enlace de WhatsApp para enviar APK
+// Endpoint para generar mensaje de WhatsApp con enlace del APK
 app.post("/api/apk/send-whatsapp", protect, async (req, res) => {
   try {
     // Verificar que el usuario es admin
@@ -1446,44 +1597,53 @@ app.post("/api/apk/send-whatsapp", protect, async (req, res) => {
       });
     }
 
-    const { phoneNumber, deliveryName, customMessage } = req.body;
-    
+    const { phoneNumber, message } = req.body;
+
     if (!phoneNumber) {
       return res.status(400).json({
         success: false,
         message: "Número de teléfono es requerido"
       });
     }
-    
+
     // URL del APK
     const apkUrl = process.env.APK_URL || "http://185.144.157.163/apk/boston-tracker-latest.apk";
     
+    // Mensaje predeterminado optimizado para WhatsApp
+    const defaultMessage = `Hola! Te envio la aplicacion Boston Tracker para delivery.
+
+Descarga desde este enlace:
+${apkUrl}
+
+Instrucciones:
+1. Toca el enlace para descargar
+2. Instala la aplicacion
+3. Usa tu codigo de empleado para iniciar sesion
+
+Cualquier duda, escribeme.
+Gracias!`;
+
+    const finalMessage = message || defaultMessage;
+
     // Limpiar número de teléfono (remover espacios, guiones, etc.)
-    const cleanPhone = phoneNumber.replace(/[^\d+]/g, "");
+    const cleanPhone = phoneNumber.replace(/[^0-9+]/g, "");
     
-    // Mensaje predefinido
-    const defaultMessage = `*BOSTON American Burgers - App Delivery*\n\nHola ${deliveryName || ""}!\n\nTe envio la aplicacion oficial de BOSTON Tracker para que puedas comenzar a trabajar como delivery.\n\nDescarga la app desde este enlace:\n\n${apkUrl}\n\n*Instrucciones:*\n1. Toca el enlace de arriba para descargar\n2. Permite instalacion de "Fuentes desconocidas"\n3. Instala la aplicacion\n4. Usa tus credenciales de empleado para login\n\n*Listo para comenzar!*\n\nCualquier duda, no dudes en contactarme.\n\n---\nBOSTON American Burgers`;
-    
-    const finalMessage = customMessage || defaultMessage;
+    // Codificar mensaje para URL
+    const encodedMessage = encodeURIComponent(finalMessage);
     
     // Generar URL de WhatsApp
-    const whatsappUrl = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(finalMessage)}`;
-    
-    // Log de la acción
-    console.log(`📱 WhatsApp APK send requested by ${req.user.name} to ${cleanPhone}`);
-    
+    const whatsappUrl = `https://wa.me/${cleanPhone}?text=${encodedMessage}`;
+
     res.json({
       success: true,
-      message: "Enlace de WhatsApp generado exitosamente",
       data: {
-        whatsappUrl,
-        phoneNumber: cleanPhone,
-        apkUrl,
+        whatsappUrl: whatsappUrl,
         message: finalMessage,
-        timestamp: new Date().toISOString()
+        phoneNumber: cleanPhone,
+        apkUrl: apkUrl
       }
     });
-    
+
   } catch (error) {
     console.error("Error generando enlace de WhatsApp:", error);
     res.status(500).json({
@@ -1493,7 +1653,7 @@ app.post("/api/apk/send-whatsapp", protect, async (req, res) => {
   }
 });
 
-// Obtener información del APK
+// Endpoint para obtener información del APK
 app.get("/api/apk/info", protect, async (req, res) => {
   try {
     // Verificar que el usuario es admin
@@ -1543,40 +1703,6 @@ app.get("/api/apk/info", protect, async (req, res) => {
       message: "Error obteniendo información del APK"
     });
   }
-});
-
-
-// Socket.io
-io.on('connection', (socket) => {
-  console.log('🔌 Cliente conectado:', socket.id);
-
-  // Admin se une a la sala de admins
-  socket.on('join-admin', () => {
-    socket.join('admins');
-    console.log('👔 Admin se unió al room');
-  });
-
-  // Delivery se une a su sala específica
-  socket.on('join-delivery', (deliveryId) => {
-    if (deliveryId) {
-      socket.join(`delivery-${deliveryId}`);
-      console.log(`🚚 Delivery ${deliveryId} se unió a su room específico`);
-    }
-  });
-
-  // Manejar desconexión
-  socket.on('disconnect', () => {
-    console.log('🔌 Cliente desconectado:', socket.id);
-  });
-});
-
-// Manejo de errores
-app.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(500).json({ 
-    message: 'Error interno del servidor',
-    error: process.env.NODE_ENV === 'development' ? err.message : {}
-  });
 });
 
 app.use('*', (req, res) => {

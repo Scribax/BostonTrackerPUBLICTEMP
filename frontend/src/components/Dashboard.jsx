@@ -1,3 +1,4 @@
+import Logger from "../config/logger.js";
 import React, { useState, useEffect, useCallback } from 'react';
 import { Container, Navbar, Nav, Button, Spinner, Alert, Tab, Tabs } from 'react-bootstrap';
 import { useAuth } from '../context/AuthContext';
@@ -97,7 +98,7 @@ const Dashboard = () => {
     if (socketConnected) {
       // Listener para actualizaciones de ubicación
       const handleLocationUpdate = (data) => {
-        console.log('📍 Actualización de ubicación:', data);
+        Logger.deliveryUpdate('Location update:', data);
         
         setDeliveries(prev => prev.map(delivery => {
           if (delivery.deliveryId === data.deliveryId) {
@@ -111,15 +112,12 @@ const Dashboard = () => {
           return delivery;
         }));
 
-        toast.success(
-          `${data.deliveryName}: Ubicación actualizada`,
-          { duration: 2000 }
-        );
+        // Notificaciones de ubicación eliminadas para mejorar UX del dashboard
       };
 
       // Listener para viajes iniciados
       const handleTripStarted = (data) => {
-        console.log('🚀 Viaje iniciado:', data);
+        Logger.tripUpdate('Trip started:', data);
         
         toast.success(
           `${data.deliveryName} ha iniciado un viaje`,

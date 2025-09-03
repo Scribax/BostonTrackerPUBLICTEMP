@@ -38,7 +38,7 @@ class TripService {
   // Obtener detalles de un viaje específico
   async getTripDetails(tripId) {
     try {
-      const response = await api.get(`/trips/${tripId}`);
+      const response = await api.get(`/trips/details/${tripId}`);
       
       if (response.data && response.data.success) {
         return response.data;
@@ -67,7 +67,7 @@ class TripService {
   // Eliminar viaje del historial
   async deleteTrip(tripId) {
     try {
-      const response = await api.delete(`/trips/${tripId}`);
+      const response = await api.delete(`/trips/details/${tripId}`);
       
       if (response.data && response.data.success) {
         return response.data;
