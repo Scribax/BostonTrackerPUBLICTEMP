@@ -10,13 +10,35 @@ Sistema completo de seguimiento en tiempo real para deliveries de **BOSTON Ameri
 - 🔄 **Comunicación en tiempo real** con Socket.io
 - 🗺️ **Mapas interactivos** con Leaflet y OpenStreetMap
 - 📊 **Analytics y reportes** de deliveries
+- 🎯 **Sistema de logs configurable** para debugging y producción
+- ✅ **Gestión completa de viajes** con detalles y eliminación
 
 ## 🌐 URLs del Sistema
 
 - **🌐 Dashboard Web:** http://185.144.157.163/
 - **📄 Contratos y Términos:** http://185.144.157.163/contratos/
 - **📱 Descarga APK:** http://185.144.157.163/apk/boston-tracker-latest.apk
-- **🔌 API Backend:** http://185.144.157.163:3001/
+- **🔌 API Backend:** http://185.144.157.163:5000/api/
+
+## 🚀 Últimas Mejoras Implementadas
+
+### ✨ Nuevas Funcionalidades
+- **Endpoint de detalles de viaje**: `/api/trips/details/:id` con información completa
+- **Eliminación de viajes**: Funcionalidad completa desde el dashboard
+- **Sistema de logs avanzado**: Configuración por niveles (ERROR, WARN, INFO, DEBUG)
+- **Información de delivery**: Visualización completa en historial y detalles
+
+### 🐛 Correcciones de Errores
+- **Conflictos de rutas**: Solucionados entre endpoints de viajes
+- **Errores 404**: Corregidos al eliminar viajes desde el frontend
+- **Datos faltantes**: Información de delivery ahora visible en todos los detalles
+- **URLs del frontend**: Actualizadas para usar nuevas rutas del backend
+
+### 🔧 Mejoras Técnicas
+- **Logging centralizado**: Configuración única para toda la aplicación
+- **Manejo de errores**: Mejorado en peticiones API
+- **Experiencia de usuario**: Dashboard más responsivo y funcional
+- **Optimización**: Reducción significativa de logs en producción
 
 ## 📂 Estructura del Proyecto
 
@@ -26,7 +48,12 @@ boston-tracker/
 │   ├── boston-tracker-latest.apk
 │   └── README.txt
 ├── 🖥️  backend/       # API y servidor Node.js
-│   ├── src/
+│   ├── server-postgres.js    # Servidor principal
+│   ├── config/              # Configuraciones
+│   ├── controllers/         # Controladores API
+│   ├── models/             # Modelos de datos
+│   ├── routes/             # Rutas de la API
+│   ├── middleware/         # Middlewares
 │   ├── package.json
 │   └── README.md
 ├── 📄 contratos/     # Página de términos y contratos
@@ -38,7 +65,12 @@ boston-tracker/
 │   └── MEJORAS_IMPLEMENTADAS.md
 ├── 🌐 frontend/      # Dashboard web React
 │   ├── src/
-│   ├── build/
+│   │   ├── components/      # Componentes React
+│   │   ├── services/        # Servicios API
+│   │   ├── config/          # Configuraciones
+│   │   │   └── logger.js    # Sistema de logs
+│   │   └── context/         # Contextos React
+│   ├── build/              # Archivos compilados
 │   ├── package.json
 │   └── README.md
 ├── 📱 mobile-app/    # Aplicación móvil React Native
@@ -50,7 +82,13 @@ boston-tracker/
 └── 📋 README.md      # Este archivo
 ```
 
-## 🚀 Inicio Rápido
+## 🚀 Instalación y Configuración
+
+### Prerrequisitos
+- Node.js 16+ 
+- PostgreSQL 12+
+- Nginx (para servir el frontend)
+- Git
 
 ### 1. Clonar el repositorio
 ```bash
@@ -58,255 +96,148 @@ git clone https://github.com/Scribax/BostonTracker.git
 cd BostonTracker
 ```
 
-### 2. Configurar Backend
+### 2. Backend Setup
 ```bash
 cd backend
+npm install
 cp .env.example .env
 # Configurar variables de entorno
-npm install
-npm run dev
+node server-postgres.js
 ```
 
-### 3. Configurar Frontend
+### 3. Frontend Setup  
 ```bash
 cd frontend
 npm install
 npm run build
-# O para desarrollo: npm run dev
+# Copiar build/ a directorio web de Nginx
 ```
 
-### 4. Configurar App Móvil
+### 4. Database Setup
 ```bash
-cd mobile-app
-npm install
-# Para Android:
-npx expo run:android
+# Crear base de datos PostgreSQL
+createdb boston_tracker
+# El servidor creará las tablas automáticamente
 ```
 
-## 🔧 Tecnologías Utilizadas
+## 🔌 API Endpoints
+
+### Autenticación
+- `POST /api/auth/login` - Iniciar sesión
+- `GET /api/auth/me` - Información del usuario actual
+- `GET /api/auth/users` - Listar usuarios (admin)
+
+### Viajes
+- `GET /api/trips/history` - Historial de viajes
+- `GET /api/trips/details/:id` - **[NUEVO]** Detalles completos de viaje
+- `DELETE /api/trips/details/:id` - **[NUEVO]** Eliminar viaje específico
+- `POST /api/trips/start` - Iniciar viaje
+- `POST /api/trips/end` - Finalizar viaje
+
+### Deliveries
+- `GET /api/deliveries` - Listar deliveries activos
+- `GET /api/deliveries/:id/history` - Historial de delivery
+
+### Ubicaciones
+- `POST /api/location` - Registrar ubicación
+- `GET /api/deliveries/:id/locations` - Ubicaciones de delivery
+
+## 📊 Dashboard Web
+
+El dashboard incluye:
+
+- **🗺️ Mapa en tiempo real** con ubicaciones de deliveries
+- **📋 Lista de deliveries** activos
+- **📈 Historial de viajes** con búsqueda y filtros
+- **👥 Gestión de usuarios** 
+- **📱 Gestión de APK** para la app móvil
+- **🔍 Detalles completos** de cada viaje con métricas
+- **🗑️ Eliminación segura** de viajes completados
+
+## 🏃‍♂️ Ejecutar en Desarrollo
 
 ### Backend
-- **Node.js** con Express
-- **PostgreSQL** como base de datos
-- **Socket.io** para tiempo real
-- **JWT** para autenticación
-- **Sequelize** ORM
+```bash
+cd backend
+npm run dev  # o node server-postgres.js
+```
 
 ### Frontend
-- **React** con Vite
-- **Leaflet** para mapas
-- **Socket.io-client** para tiempo real
-- **Material-UI** para componentes
-
-### Mobile App
-- **React Native** con Expo
-- **Expo Location** para GPS
-- **AsyncStorage** para datos locales
-- **React Navigation** para navegación
-
-## 📱 Instalación de la App
-
-### Opción 1: Descarga Directa
-Descarga el APK desde: http://185.144.157.163/apk/boston-tracker-latest.apk
-
-### Opción 2: Build desde código
-```bash
-cd mobile-app
-npm install
-npx expo build:android
+```bash  
+cd frontend
+npm start    # servidor de desarrollo
+npm run build # compilar para producción
 ```
 
-## 🔐 Configuración de Producción
+## 🎯 Sistema de Logging
 
-### Variables de Entorno
-Copia `.env.template` a `.env` y configura:
-```bash
-# Base de datos
-DATABASE_URL=postgresql://user:password@localhost:5432/boston_tracker
+### Configuración de Logs
+El frontend incluye un sistema de logs configurable en `frontend/src/config/logger.js`:
 
-# JWT
-JWT_SECRET=tu_secret_super_seguro
-
-# URLs
-FRONTEND_URL=http://185.144.157.163
-API_URL=http://185.144.157.163:3001
+```javascript
+const LOG_LEVELS = {
+  NONE: 0,    // Sin logs
+  ERROR: 1,   // Solo errores críticos
+  WARN: 2,    // Errores y advertencias
+  INFO: 3,    // Información básica
+  DEBUG: 4    // Todos los logs (desarrollo)
+};
 ```
 
-### Nginx
-La configuración de Nginx está optimizada para servir:
-- Frontend en `/`
-- Contratos en `/contratos/`
-- Descargas APK en `/apk/`
-- API proxy en `/api`
+### Uso en Producción
+Por defecto está configurado en `ERROR` para minimizar logs en consola. Para debugging completo cambiar a `DEBUG`.
 
-## 📊 Estado del Proyecto
+## 🔐 Usuarios por Defecto
 
-- ✅ **Backend:** API completa y funcional
-- ✅ **Frontend:** Dashboard responsive y operativo
-- ✅ **Mobile App:** APK compilado con permisos de ubicación
-- ✅ **Base de datos:** PostgreSQL configurada
-- ✅ **Deployment:** Nginx configurado y funcionando
-- ✅ **Documentación:** Completa y actualizada
+- **Admin**: admin@bostonburgers.com / password123
+- **Delivery 1**: DEL001 / delivery123  
+- **Delivery 2**: DEL002 / delivery123
 
-## 🐛 Problemas Resueltos
+## 📱 App Móvil
 
-- ✅ HTTP habilitado en producción para Android
-- ✅ Permisos de ubicación configurados correctamente
-- ✅ Tracking en background optimizado
-- ✅ CORS configurado para todas las rutas
-- ✅ Iconos y assets de la app configurados
-- ✅ Página de contratos y términos implementada
+La aplicación móvil React Native incluye:
+- Tracking GPS en tiempo real
+- Interfaz para iniciar/finalizar viajes
+- Envío automático de ubicaciones
+- Notificaciones push
+
+## 🛠️ Tecnologías Utilizadas
+
+### Backend
+- Node.js + Express
+- PostgreSQL con Sequelize ORM
+- Socket.io para tiempo real
+- JWT para autenticación
+- bcrypt para passwords
+
+### Frontend  
+- React 18 con Hooks
+- Leaflet para mapas
+- Axios para HTTP requests
+- React Hot Toast para notificaciones
+- Sistema de logging customizado
+
+### Mobile
+- React Native
+- Expo (para desarrollo)
+- React Navigation
+- AsyncStorage
+
+## 🚀 Deploy en Producción
+
+El sistema está configurado para funcionar en:
+- **Backend**: Puerto 5000
+- **Frontend**: Servido por Nginx en puerto 80
+- **Database**: PostgreSQL en puerto 5432
 
 ## 📞 Soporte
 
-- **📧 Email:** soporte@bostontracker.com
-- **🐛 Issues:** [GitHub Issues](https://github.com/Scribax/BostonTracker/issues)
-- **📚 Documentación:** Ver directorio `docs/`
+Para soporte técnico o consultas sobre el sistema, contactar al desarrollador a través del repositorio de GitHub.
 
 ## 📄 Licencia
 
-Proyecto propietario de BOSTON American Burgers.
+Este proyecto es propiedad de BOSTON American Burgers. Todos los derechos reservados.
 
 ---
 
-**Última actualización:** $(date '+%d/%m/%Y %H:%M')  
-**Versión:** v1.0.0  
-**Estado:** ✅ Producción
-
-## 📊 **NUEVA FUNCIONALIDAD: Historial de Viajes Completados**
-
-### 🆕 Características Agregadas (Sept 2, 2025)
-
-#### 📋 **Gestión de Historial de Viajes**
-- **Nueva pestaña** "Historial de Viajes" en el dashboard administrativo
-- **Visualización completa** de todos los viajes completados con métricas detalladas
-- **Estadísticas agregadas** por delivery: kilómetros totales, horas trabajadas, velocidad promedio
-- **Búsqueda y filtrado** por nombre de delivery o ID de empleado
-- **Ordenamiento** por cualquier columna (fecha, duración, distancia, velocidad)
-- **Paginación** para manejar grandes volúmenes de datos
-- **Eliminación controlada** de viajes del historial (solo administradores)
-
-#### 🔍 **Información Detallada por Viaje**
-- **Métricas completas:** distancia, duración, velocidad promedio/máxima
-- **Ubicaciones:** puntos GPS de inicio y final con coordenadas precisas
-- **Timestamps:** fechas y horas exactas de inicio y finalización
-- **Rutas:** número total de puntos GPS registrados durante el viaje
-- **Métricas en tiempo real:** datos de velocidad y tracking si están disponibles
-
-#### 🗑️ **Gestión de Datos**
-- **Eliminación segura:** confirmación requerida antes de eliminar
-- **Protección de datos:** no se pueden eliminar viajes activos
-- **Cascade delete:** elimina automáticamente las ubicaciones asociadas
-- **Logs de auditoría:** registro de todas las eliminaciones
-
-#### 🎯 **Endpoints API Nuevos**
-```bash
-GET  /api/trips/history     # Obtener historial paginado de viajes
-GET  /api/trips/:id         # Obtener detalles de un viaje específico  
-DELETE /api/trips/:id       # Eliminar viaje del historial (solo admin)
-```
-
-#### 💡 **Casos de Uso**
-- **Análisis de rendimiento** de deliveries individuales
-- **Reportes gerenciales** de productividad y eficiencia
-- **Auditoría de rutas** y tiempos de entrega
-- **Gestión de espacio** eliminando datos históricos innecesarios
-- **Métricas de negocio** para optimización operativa
-
-#### 🔧 **Detalles Técnicos**
-- **Componente:** `TripHistory.jsx` con Bootstrap y React hooks
-- **Servicio:** `tripService.js` para comunicación con API
-- **Paginación:** 20 registros por página por defecto
-- **Filtros:** búsqueda en tiempo real sin necesidad de botones
-- **UI/UX:** modales para detalles y confirmaciones de eliminación
-
----
-
-
-## 📱 **NUEVA FUNCIONALIDAD: Envío de APK via WhatsApp**
-
-### 🆕 Características Agregadas (Sept 2, 2025 - 16:35)
-
-#### 📲 **Gestión de APK desde Dashboard Admin**
-- **Nueva pestaña "Gestión APK"** en el dashboard administrativo
-- **Envío directo via WhatsApp** a deliveries registrados o números personalizados
-- **Información completa del APK** (tamaño, versión, características)
-- **Enlaces de descarga** con opción de copiar URL
-- **Mensajes predefinidos** con instrucciones completas de instalación
-
-#### 🚀 **Funcionalidades Implementadas:**
-
-1. **📋 Información del APK:**
-   - Nombre del archivo y tamaño (69.1 MB)
-   - Versión actual (1.0.1)
-   - Fecha de build y compatibilidad
-   - Lista de características principales
-   - Última fecha de modificación
-
-2. **📱 Envío via WhatsApp:**
-   - **Selección de delivery** desde lista de usuarios registrados
-   - **Número personalizado** para nuevos deliveries
-   - **Mensaje personalizable** o uso de plantilla predeterminada
-   - **Vista previa** del mensaje antes de enviar
-   - **Apertura automática** de WhatsApp Web/App
-
-3. **👥 Lista de Deliveries:**
-   - **Envío rápido** con un click a deliveries con teléfono registrado
-   - **Estado visual** de deliveries activos/inactivos
-   - **Formato de números** argentinos (+54 9 XXX XXX-XXXX)
-   - **Validación automática** de teléfonos disponibles
-
-#### 🔧 **Implementación Técnica:**
-
-**Backend (2 nuevos endpoints):**
-- `POST /api/apk/send-whatsapp` - Generar enlace de WhatsApp
-- `GET /api/apk/info` - Información del APK
-
-**Frontend (nuevos componentes):**
-- `APKManager.jsx` - Componente principal de gestión
-- `apkService.js` - Servicio de comunicación con API
-- Integración en `Dashboard.jsx` como cuarta pestaña
-
-#### 📲 **Mensaje Predeterminado:**
-```
-🍔 BOSTON American Burgers - App Delivery
-
-¡Hola [Nombre]! 👋
-
-Te envío la aplicación oficial de BOSTON Tracker para que puedas comenzar a trabajar como delivery.
-
-📱 Descarga la app aquí:
-http://185.144.157.163/apk/boston-tracker-latest.apk
-
-📋 Instrucciones:
-1️⃣ Descarga el archivo APK
-2️⃣ Permite instalación de "Fuentes desconocidas"
-3️⃣ Instala la aplicación
-4️⃣ Usa tus credenciales de empleado para login
-
-🚀 ¡Listo para comenzar!
-
-Cualquier duda, no dudes en contactarme.
-
----
-BOSTON American Burgers 🍔
-```
-
-#### 🌍 **Flujo de Uso:**
-
-1. **Admin accede** a "Gestión APK" en dashboard
-2. **Selecciona delivery** o ingresa número personalizado
-3. **Personaliza mensaje** (opcional)
-4. **Click "Enviar via WhatsApp"** → abre WhatsApp con mensaje listo
-5. **Admin envía** el mensaje con un click
-6. **Delivery recibe** enlace y puede descargar APK inmediatamente
-
-#### 🔒 **Seguridad y Validaciones:**
-- ✅ Solo administradores pueden acceder
-- ✅ Validación de números de teléfono
-- ✅ Sanitización de inputs
-- ✅ Logs de auditoría en backend
-- ✅ Protección contra spam
-
----
-
+**Boston Tracker** - Sistema profesional de gestión de deliveries 🍔🚚
