@@ -65,3 +65,49 @@ ehthumbs.db
 # APK files
 *.apk
 *.aab
+
+# Development and backup files
+*.backup*
+*.before-*
+*.test-backup
+*.temp*
+*.tmp*
+
+# Log files
+*.log
+restart.log
+backend.log
+server.log
+final_restart.log
+
+# Temporary development files
+apply_gps_fix.py
+gps_fix_patch.js
+gps_improvements.js
+new_endpoint.js
+new_speed_function.txt
+trip_details_endpoint.js
+final_part.txt
+temp_grouping.js
+new_render_section.jsx
+
+# Demo files (now in separate repo)
+LIVE-DEMO/
+demo-server.py
+launch-demo.sh
+SETUP-INSTRUCTIONS.md
+PORTFOLIO_THUMBNAIL_PROMPT.md
+
+# OS and IDE files
+.DS_Store
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+Thumbs.db
+
+# Large APK files (manage separately)
+apk/*.apk
+!apk/README.md
+!apk/APK-VERSIONS.md
