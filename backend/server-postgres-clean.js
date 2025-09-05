@@ -1760,136 +1760,6 @@ async function createTestUsers() {
   }
 }
 
-
-// ========================================
-// 📊 ENDPOINT DE STATUS DEL SISTEMA
-// ========================================
-app.get("/api/system/status", async (req, res) => {
-  try {
-    const fs = require("fs");
-    const status = {
-      timestamp: new Date().toISOString(),
-      system: {
-        name: "Boston Tracker",
-        version: "1.0.0",
-        environment: process.env.NODE_ENV || "production",
-        uptime: Math.round(process.uptime()),
-        memory: {
-          used: Math.round(process.memoryUsage().heapUsed / 1024 / 1024) + " MB",
-          total: Math.round(process.memoryUsage().heapTotal / 1024 / 1024) + " MB"
-        }
-      },
-      services: {}
-    };
-
-    // 1. Verificar Base de Datos
-    try {
-      await sequelize.authenticate();
-      status.services.database = {
-        status: "operational",
-        name: "PostgreSQL",
-        details: "Conectado exitosamente",
-        last_check: new Date().toISOString()
-      };
-    } catch (error) {
-      status.services.database = {
-        status: "degraded",
-        name: "PostgreSQL",
-        error: error.message,
-        last_check: new Date().toISOString()
-      };
-    }
-
-    // 2. Verificar Deliveries
-    try {
-      const activeDeliveries = await Trip.count({ where: { status: "active" } });
-      const totalUsers = await User.count({ where: { role: "delivery" } });
-      status.services.deliveries = {
-        status: "operational",
-        name: "Deliveries",
-        active_count: activeDeliveries,
-        total_deliveries: totalUsers,
-        details: activeDeliveries + " activas de " + totalUsers + " repartidores",
-        last_check: new Date().toISOString()
-      };
-    } catch (error) {
-      status.services.deliveries = {
-        status: "degraded",
-        name: "Deliveries",
-        error: error.message,
-        last_check: new Date().toISOString()
-      };
-    }
-
-    // 3. Socket.io
-    status.services.websocket = {
-      status: "operational",
-      name: "Socket.io",
-      connected_clients: io.sockets.sockets.size,
-      details: io.sockets.sockets.size + " clientes conectados",
-      last_check: new Date().toISOString()
-    };
-
-    // 4. API
-    status.services.api = {
-      status: "operational",
-      name: "REST API",
-      port: process.env.SERVER_PORT || 5000,
-      details: "API funcionando correctamente",
-      last_check: new Date().toISOString()
-    };
-
-    // 5. Frontend
-    status.services.frontend = {
-      status: "operational",
-      name: "Dashboard Web",
-      url: "http://" + (process.env.SERVER_IP || "localhost"),
-      details: "Dashboard accesible",
-      last_check: new Date().toISOString()
-    };
-
-    // 6. APK
-    try {
-      const apkPath = "/var/www/html/apk/boston-tracker-latest.apk";
-      const stats = fs.statSync(apkPath);
-      status.services.mobile_app = {
-        status: "operational",
-        name: "App Móvil",
-        apk_size: Math.round(stats.size / 1024 / 1024 * 100) / 100 + " MB",
-        details: "APK disponible",
-        last_check: new Date().toISOString()
-      };
-    } catch (error) {
-      status.services.mobile_app = {
-        status: "degraded",
-        name: "App Móvil",
-        error: "APK no encontrado",
-        last_check: new Date().toISOString()
-      };
-    }
-
-    // Status general
-    const services = Object.values(status.services);
-    const operational = services.filter(s => s.status === "operational").length;
-    const degraded = services.filter(s => s.status === "degraded").length;
-    
-    if (degraded === 0) {
-      status.overall_status = "operational";
-    } else if (operational >= degraded) {
-      status.overall_status = "partial_outage";
-    } else {
-      status.overall_status = "major_outage";
-    }
-
-    res.json(status);
-  } catch (error) {
-    res.status(500).json({
-      overall_status: "major_outage",
-      error: error.message,
-      timestamp: new Date().toISOString()
-    });
-  }
-});
 // Iniciar servidor
 async function startServer() {
   try {
@@ -1902,7 +1772,7 @@ async function startServer() {
     console.log('✅ Modelos sincronizados');
     
     // Crear usuarios de prueba
-    // await createTestUsers(); // Deshabilitado para evitar recrear usuarios
+    await createTestUsers();
     
     server.listen(PORT, '0.0.0.0', () => {
       console.log(`🚀 Servidor ejecutándose en puerto ${PORT} (PostgreSQL)`);
