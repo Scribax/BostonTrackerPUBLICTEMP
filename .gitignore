@@ -1,113 +1,102 @@
-# Dependencies
+# 🍔 BOSTON Tracker - .gitignore
+
+# === DEPENDENCIES ===
 node_modules/
-*/node_modules/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+package-lock.json
 
-# Production builds
-/frontend/build/
-/frontend/dist/
-/backend/dist/
-
-# Environment files
+# === ENVIRONMENT VARIABLES ===
 .env
 .env.local
 .env.development.local
 .env.test.local
 .env.production.local
 
-# Logs
+# === BUILD OUTPUTS ===
+build/
+dist/
+out/
+*.tgz
+*.tar.gz
+
+# === LOGS ===
 *.log
-logs/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+backend.log
 
-# Expo
-/mobile-app/.expo/
-/mobile-app/dist/
-/mobile-app/web-build/
+# === RUNTIME DATA ===
+pids/
+*.pid
+*.seed
+*.pid.lock
 
-# Temporary files
+# === TEMPORARY FILES ===
+temp-files/
 *.tmp
 *.temp
 .DS_Store
 Thumbs.db
+*~
+.swp
+.swo
 
-# Compressed files (client packages)
-*.tar.gz
-*.zip
-*.rar
-*.7z
+# === DATABASE ===
+*.db
+*.sqlite
+*.sqlite3
 
-# IDE files
+# === MOBILE SPECIFIC ===
+# Expo
+.expo/
+dist/
+npm-debug.*
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+*.orig.*
+web-build/
+
+# Android
+android/app/build/
+android/build/
+android/.gradle/
+android/gradle/
+android/gradlew
+android/gradlew.bat
+android/local.properties
+*.keystore
+!debug.keystore
+
+# iOS
+ios/build/
+ios/Pods/
+ios/*.xcworkspace
+
+# === BACKUPS ===
+*.backup
+*.bak
+*.old
+backup_*
+
+# === IDE ===
 .vscode/
 .idea/
 *.swp
 *.swo
+*~
 
-# OS generated files
+# === OS ===
 .DS_Store
 .DS_Store?
 ._*
 .Spotlight-V100
 .Trashes
 ehthumbs.db
-
-# Database files
-*.db
-*.sqlite
-*.sqlite3
-
-# Certificate and key files
-*.pem
-*.key
-*.crt
-
-# APK files
-*.apk
-*.aab
-
-# Development and backup files
-*.backup*
-*.before-*
-*.test-backup
-*.temp*
-*.tmp*
-
-# Log files
-*.log
-restart.log
-backend.log
-server.log
-final_restart.log
-
-# Temporary development files
-apply_gps_fix.py
-gps_fix_patch.js
-gps_improvements.js
-new_endpoint.js
-new_speed_function.txt
-trip_details_endpoint.js
-final_part.txt
-temp_grouping.js
-new_render_section.jsx
-
-# Demo files (now in separate repo)
-LIVE-DEMO/
-demo-server.py
-launch-demo.sh
-SETUP-INSTRUCTIONS.md
-PORTFOLIO_THUMBNAIL_PROMPT.md
-
-# OS and IDE files
-.DS_Store
-.vscode/
-.idea/
-*.swp
-*.swo
-*~
 Thumbs.db
-
-# Large APK files (manage separately)
-apk/*.apk
-!apk/README.md
-!apk/APK-VERSIONS.md
