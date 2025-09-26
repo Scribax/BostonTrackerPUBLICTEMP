@@ -27,7 +27,7 @@ boston-tracker/
 ├── scripts/              # Scripts de automatización
 ├── marketing/            # Material de marketing
 ├── documentation/        # Documentación organizada
-└── WARP_COMPLETO.md     # 📖 DOCUMENTACIÓN COMPLETA
+└── DOCUMENTACION_COMPLETA.md     # 📖 DOCUMENTACIÓN COMPLETA
 ```
 
 ## 🔧 Componentes
@@ -40,7 +40,7 @@ boston-tracker/
 ## 📖 Documentación
 
 ### 📋 Documentación Principal
-- **[WARP_COMPLETO.md](WARP_COMPLETO.md)** - Documentación completa del sistema
+- **[DOCUMENTACION_COMPLETA.md](DOCUMENTACION_COMPLETA.md)** - Documentación completa del sistema
 
 ### 📚 Documentación Específica
 - **[Técnica](documentation/technical/)** - Detalles técnicos y arquitectura

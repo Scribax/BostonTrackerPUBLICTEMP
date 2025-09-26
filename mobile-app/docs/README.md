@@ -11,4 +11,4 @@ Este directorio contiene documentación específica de la aplicación móvil.
 - **ADVANCED_LOCATION_API.md**: API avanzada de ubicación
 
 ## 📖 Para Documentación Completa:
-Ver archivo principal: `../../WARP_COMPLETO.md`
+Ver archivo principal: `../../DOCUMENTACION_COMPLETA.md`

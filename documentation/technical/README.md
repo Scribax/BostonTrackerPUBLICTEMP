@@ -13,4 +13,4 @@ Este directorio contiene toda la documentación técnica del proyecto.
 - **MEJORAS_IMPLEMENTADAS.md**: Historial de mejoras realizadas
 
 ## 📖 Para Documentación Completa:
-Ver archivo principal: `../../WARP_COMPLETO.md`
+Ver archivo principal: `../../DOCUMENTACION_COMPLETA.md`
